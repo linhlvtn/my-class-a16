@@ -1,0 +1,76 @@
+.bottom-navigation{display:none}
+@media(max-width:700px){
+  .bottom-navigation .bottom-nav-icon{width:48px;height:36px;border-radius:14px;background:var(--nav-wash);box-shadow:inset 0 1px 0 #ffffffb0;transition:transform .2s,box-shadow .2s}
+  .bottom-navigation .bottom-nav-icon svg,.bottom-navigation .nav-star-art{width:33px;height:33px;object-fit:contain;filter:drop-shadow(0 2px 1px #704b3820)}
+  .bottom-navigation a{--nav-wash:#fff0dc;--nav-ink:#ae6139}
+  .bottom-navigation .nav-color-1{--nav-wash:#f0e8ff;--nav-ink:#7954ae}
+  .bottom-navigation .nav-color-2{--nav-wash:#ffe9f0;--nav-ink:#bb4e79}
+  .bottom-navigation .nav-color-3{--nav-wash:#fff2be;--nav-ink:#94630a}
+  .bottom-navigation .nav-color-4{--nav-wash:#e3f3ff;--nav-ink:#317ba6}
+  .bottom-navigation a[aria-current] .bottom-nav-icon{background:var(--nav-wash);box-shadow:0 2px 0 color-mix(in srgb,var(--nav-ink) 30%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--nav-ink) 18%,transparent);animation:nav-pop .45s ease-out}
+  .bottom-navigation a[aria-current]{color:var(--nav-ink)}
+  @keyframes nav-pop{0%{transform:scale(.85)}55%{transform:translateY(-4px) rotate(-5deg) scale(1.08)}100%{transform:none}}
+}
+@media(max-width:700px){
+  html{scroll-padding-top:90px;scroll-padding-bottom:100px}
+  body{padding-bottom:calc(82px + env(safe-area-inset-bottom));overflow-wrap:break-word}
+  .header-inner .header-menu{display:none!important}
+  .header-inner{height:76px!important;min-height:76px!important;padding:8px 0;flex-wrap:nowrap}
+  .site-header{overflow:visible}
+  .bottom-navigation{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;z-index:50;bottom:0;left:0;right:0;padding:8px max(6px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));border-top:1px solid #dfe9dd;background:#fffefaf5;backdrop-filter:blur(18px);box-shadow:0 -6px 28px #294e4712}
+  .bottom-navigation a{min-width:0;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#64776f;font-size:11px;font-weight:900;line-height:1.4;text-align:center;border-radius:14px}
+  .bottom-nav-icon{display:grid;place-items:center;width:46px;height:29px;border-radius:12px;transition:background .2s}
+  .bottom-nav-icon svg{width:23px;height:23px}
+  .bottom-navigation a[aria-current]{color:var(--nav-ink)}
+  .bottom-navigation a[aria-current] .bottom-nav-icon{background:var(--nav-wash)}
+  .bottom-navigation a:active{background:#edf4e9}
+  footer{padding-bottom:30px}
+  .class-header{position:sticky;top:0;z-index:20;background:#fffdf8f5;backdrop-filter:blur(12px)}
+  .class-header>a:last-child{display:none}
+  .class-bottom{padding-bottom:24px}
+  .cover-art{width:min(88%,330px);margin:0 0 -10px}
+  .cover-inner{padding-bottom:120px}
+  .cover-copy h1{font-size:38px}
+  .cover-copy p{font-size:15px;line-height:1.65;padding:0 12px}
+  .cover-button{font-size:15px;min-height:52px;padding:13px 22px}
+  .cover-label{font-size:11px}
+  .cover-signature{font-size:12px}
+  .section{padding-top:40px}
+  .wrap{width:calc(100% - 28px)}
+  .daily-update{width:calc(100% - 28px);padding:22px 12px}
+  .daily-update-heading p,.message-body,.gentle-reminder,.homework-intro,.homework-item small{font-size:14px;line-height:1.65}
+  .daily-update-heading time,.daily-date,.homework-count{width:100%}
+  .daily-update-heading time{display:block;text-align:left}
+  .daily-date{margin-left:0;text-align:left}
+  .homework-item b{font-size:17px}
+  .daily-kicker{font-size:11px;letter-spacing:.3px}
+  .daily-date small{font-size:11px}
+  .daily-card-top{flex-wrap:wrap}
+  .homework-footer{flex-wrap:wrap;font-size:14px}
+  .due-label{font-size:12px}
+  .student-birthday{font-size:14px!important}
+  .student-card,.student-card:nth-child(even){width:174px;transform:none;rotate:none;translate:none;margin-top:0}
+  .student-track{align-items:stretch}
+  .leaderboard .podium-card{padding-left:0;padding-right:0;min-width:0}
+  .leaderboard .podium-card .portrait{width:65px;height:65px}
+  .leaderboard .podium-place-1 .portrait{width:78px;height:78px}
+  .leaderboard .podium-base small{font-size:10px;line-height:1.35;letter-spacing:0}
+  .leaderboard .ranking-head,.leaderboard .ranking-row{grid-template-columns:35px minmax(0,1fr) 68px;gap:6px;padding:13px 8px}
+  .leaderboard .ranking-head{font-size:11px}
+  .leaderboard .rank-student{min-width:0;gap:7px}
+  .leaderboard .rank-student b{font-size:15px}
+  .leaderboard .rank-student small{font-size:12px;line-height:1.5}
+  .leaderboard .rank-student .portrait{width:32px;height:32px}
+  .leaderboard .section-title p{font-size:14px}
+  .leaderboard .star-bottom{font-size:14px}
+  .leaderboard .period-tabs button{min-height:48px}
+  .class-profile-identity>div{min-width:0}
+  .class-search input,.class-history select{font-size:16px;min-height:48px}
+  .class-back{min-height:48px}
+  .class-note-meta{font-size:14px}
+  .class-note p,.class-parent-note p{font-size:16px;line-height:1.7}
+  .class-student h3{font-size:23px}
+  .class-student p,.class-view{font-size:14px}
+  .class-status{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.score-star,.birthday-card,.birthday-crown,.student-track,.bottom-navigation .bottom-nav-icon{animation:none!important}}
