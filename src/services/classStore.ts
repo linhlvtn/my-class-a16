@@ -1,5 +1,6 @@
 // Data store and state management service for Class 2A16
-// Supports persistent storage via localStorage and reactive updates across pages.
+// Connects to Cloudflare D1 SQL Database via backend Worker API (/api/*)
+// with optimistic UI updates and reactive local cache.
 
 export interface DailyNoticeData {
   title: string
@@ -211,6 +212,43 @@ function getInitialState(): ClassData {
 class ClassStore {
   private data: ClassData = getInitialState()
   private listeners: Set<() => void> = new Set()
+  private isSyncing = false
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.fetchFromBackend()
+      // Auto re-sync when tab becomes visible
+      window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.fetchFromBackend()
+        }
+      })
+    }
+  }
+
+  public async fetchFromBackend() {
+    try {
+      this.isSyncing = true
+      const res = await fetch('/api/data')
+      if (res.ok) {
+        const json = await res.json()
+        if (json && json.success && json.data) {
+          this.data = {
+            ...json.data,
+            avatars: json.data.avatars || {}
+          }
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data))
+          } catch (_) {}
+          this.listeners.forEach(fn => fn())
+        }
+      }
+    } catch (err) {
+      console.warn('Syncing with Cloudflare D1 Backend /api/data, using cached data:', err)
+    } finally {
+      this.isSyncing = false
+    }
+  }
 
   public subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
@@ -221,7 +259,7 @@ class ClassStore {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data))
     } catch (e) {
-      console.error('Error saving state:', e)
+      console.error('Error saving state to localStorage:', e)
     }
     this.listeners.forEach(fn => fn())
   }
@@ -234,11 +272,23 @@ class ClassStore {
   public updateDailyNotice(update: Partial<DailyNoticeData>) {
     this.data.dailyNotice = { ...this.data.dailyNotice, ...update }
     this.notify()
+    // Sync to D1 Database
+    fetch('/api/notice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(this.data.dailyNotice)
+    }).catch(err => console.error('Error persisting notice to D1:', err))
   }
 
   public updateHomework(items: HomeworkItem[]) {
     this.data.homework = items
     this.notify()
+    // Sync to D1 Database
+    fetch('/api/homework', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items })
+    }).catch(err => console.error('Error persisting homework to D1:', err))
   }
 
   public addHomeworkItem(subject: string, task: string) {
@@ -249,11 +299,13 @@ class ClassStore {
     }
     this.data.homework.push(newItem)
     this.notify()
+    this.updateHomework(this.data.homework)
   }
 
   public removeHomeworkItem(id: string) {
     this.data.homework = this.data.homework.filter(item => item.id !== id)
     this.notify()
+    this.updateHomework(this.data.homework)
   }
 
   // Star Awards Actions
@@ -268,6 +320,12 @@ class ClassStore {
     }
     this.data.awards.push(record)
     this.notify()
+    // Sync to D1 Database
+    fetch('/api/stars', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    }).catch(err => console.error('Error persisting star to D1:', err))
   }
 
   public getLeaderboard(period: 'week' | 'month') {
@@ -327,17 +385,30 @@ class ClassStore {
     // Add to top of list
     this.data.reviews[studentId].unshift(newReview)
     this.notify()
+    // Sync to D1 Database
+    fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, review: newReview })
+    }).catch(err => console.error('Error persisting review to D1:', err))
   }
 
   public updateStudentReview(studentId: number, reviewId: string, updated: Partial<StudentReviewItem>) {
     if (!this.data.reviews[studentId]) return
     const index = this.data.reviews[studentId].findIndex(r => r.id === reviewId)
     if (index !== -1) {
-      this.data.reviews[studentId][index] = {
+      const merged = {
         ...this.data.reviews[studentId][index],
         ...updated
       }
+      this.data.reviews[studentId][index] = merged
       this.notify()
+      // Sync to D1 Database
+      fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, review: merged })
+      }).catch(err => console.error('Error persisting review update to D1:', err))
     }
   }
 
@@ -353,6 +424,14 @@ class ClassStore {
       ...skills
     }
     this.notify()
+    // Sync each updated skill area to D1
+    Object.entries(skills).forEach(([area, level]) => {
+      fetch('/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, area, level })
+      }).catch(err => console.error('Error persisting skill to D1:', err))
+    })
   }
 
   // Update student personal information (name, birthday, avatar)
@@ -378,6 +457,12 @@ class ClassStore {
       }
     }
     this.notify()
+    // Sync to D1 Database
+    fetch('/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: studentId, ...profile })
+    }).catch(err => console.error('Error persisting student profile to D1:', err))
   }
 
   public getStudentAvatar(studentId: number): string | undefined {

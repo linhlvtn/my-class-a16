@@ -1,8 +1,17 @@
 {
   "name": "my-class-a16",
+  "main": "src/worker/index.ts",
   "compatibility_date": "2025-09-18",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lop2a16-db",
+      "database_id": "bdacf22a-90f7-4a7f-b312-a4efb0e386f0"
+    }
+  ]
 }
