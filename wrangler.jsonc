@@ -1,11 +1,12 @@
 {
-  "name": "my-class-a16",
+  "name": "lop2a16-xuandinh",
   "main": "src/worker/index.ts",
   "compatibility_date": "2025-09-18",
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
   },
   "d1_databases": [
     {
