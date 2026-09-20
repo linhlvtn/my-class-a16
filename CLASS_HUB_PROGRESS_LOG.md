@@ -53,13 +53,13 @@ Sau mỗi hạng mục hoàn tất:
 | Giai đoạn | Hạng mục hiện tại | Trạng thái | Kết quả / ghi chú |
 |---|---|---|---|
 | 1 — UI demo | 1.1 Khởi tạo giao diện nền tảng | DONE | Trang chủ v3, Vào lớp và Mobile Navigation đã hoàn thành và kiểm tra. |
-| 1 — UI demo | 1.2 Dữ liệu và quyền demo | IN_PROGRESS | Đã xây dựng tầng Data Store bền vững (`classStore.ts`), hỗ trợ quản lý dữ liệu cho giáo viên. |
+| 1 — UI demo | 1.2 Dữ liệu và quyền demo | DONE | Hoàn thành và nâng cấp lên Cloudflare D1 SQL Database. |
 | 1 — UI demo | 1.3 Màn hình phụ huynh/học sinh | DONE | Trang chủ và trang Vào lớp chi tiết cho phụ huynh/học sinh đã hoạt động. |
-| 1 — UI demo | 1.4 Màn hình quản trị | DONE | Hoàn thành Cổng Quản Trị GVCN Cô Vũ Thị Thiết tại `/cogiaochunhiem` (đăng nhập pass `123`, quản lý thông báo, bài tập, tặng sao Top 10, nhận xét hồ sơ 4 lĩnh vực). |
-| 1 — UI demo | 1.5 Hoàn thiện prototype và chốt UI/MVP | IN_PROGRESS | Sẵn sàng nghiệm thu prototype tổng thể trước khi chuyển sang Backend Cloudflare D1/R2/Workers. |
-| 2 — Backend | 2.1 Hạ tầng và bảo mật nền tảng | NOT_STARTED | Sẽ triển khai sau khi chốt UI/MVP (Cloudflare Workers + D1 + R2 + Firebase Auth). |
-| 2 — Backend | 2.2 Dữ liệu lõi và năm học | NOT_STARTED | Chờ hoàn thành 2.1. |
-| 2 — Backend | 2.3 Tính năng MVP | NOT_STARTED | Chờ hoàn thành 2.2. |
+| 1 — UI demo | 1.4 Màn hình quản trị | DONE | Hoàn thành Cổng Quản Trị GVCN Cô Vũ Thị Thiết tại `/cogiaochunhiem`. |
+| 1 — UI demo | 1.5 Hoàn thiện prototype và chốt UI/MVP | DONE | Đã hoàn thành và triển khai lên Cloudflare Workers. |
+| 2 — Backend | 2.1 Hạ tầng và bảo mật nền tảng | DONE | Tích hợp Cloudflare Worker API + D1 Database (`lop2a16-db`). Tự động khởi tạo schema. |
+| 2 — Backend | 2.2 Dữ liệu lõi và năm học | DONE | Lưu trữ bền vững học sinh, thông báo, bài tập, sao thi đua, nhận xét 4 lĩnh vực trên D1. |
+| 2 — Backend | 2.3 Tính năng MVP | DONE | Đồng bộ hai chiều giữa Cô giáo và Phụ huynh qua REST API `/api/*`. |
 | 2 — Backend | 2.4 Tính năng sau MVP | NOT_STARTED | Làm theo phạm vi được duyệt. |
 | 2 — Backend | 2.5 An toàn dữ liệu và backup | NOT_STARTED | Hoàn thiện trước deploy. |
 | 3 — Deploy | 3.1 Kiểm thử local | NOT_STARTED | Chỉ bắt đầu khi các tính năng được duyệt hoàn tất. |
