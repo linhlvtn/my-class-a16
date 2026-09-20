@@ -3,9 +3,9 @@
 **Mục đích:** Đây là nguồn thông tin chính xác để biết dự án đang ở đâu khi bắt đầu ngày làm việc mới hoặc khi AI/agent mới tiếp nhận công việc.
 
 **Tài liệu quy trình:** `CLASS_HUB_IMPLEMENTATION_PROCESS.md`  
-**Trạng thái dự án hiện tại:** WAITING_FOR_APPROVAL — Trang chủ phiên bản 3 đã triển khai theo phản hồi ngày 18/09, chờ duyệt. Chưa hoàn tất toàn bộ bước 1.1.  
-**Giai đoạn hiện tại:** Giai đoạn 1 — Frontend UI demo với dữ liệu tĩnh.  
-**Bước kế tiếp:** Chủ dự án duyệt trang “Vào lớp”, danh sách học sinh và hồ sơ học tập mới theo yêu cầu; tiếp nhận chỉnh sửa. Vẫn ở giai đoạn frontend demo.
+**Trạng thái dự án hiện tại:** WAITING_FOR_APPROVAL — Cổng Quản Trị GVCN `/cogiaochunhiem` và tầng dữ liệu quản lý đã triển khai và kiểm thử thành công, sẵn sàng nghiệm thu.  
+**Giai đoạn hiện tại:** Giai đoạn 1 — Frontend UI demo kết hợp Data Store quản lý cho giáo viên.  
+**Bước kế tiếp:** Chủ dự án kiểm tra và nghiệm thu Cổng Quản Trị `/cogiaochunhiem`; chuẩn bị cho giai đoạn kết nối Cloudflare Backend (D1/R2/Workers) và Firebase Auth.
 
 ### Trang Vào lớp — cập nhật 18/09/2026
 
@@ -52,12 +52,12 @@ Sau mỗi hạng mục hoàn tất:
 
 | Giai đoạn | Hạng mục hiện tại | Trạng thái | Kết quả / ghi chú |
 |---|---|---|---|
-| 1 — UI demo | 1.1 Khởi tạo giao diện nền tảng | WAITING_FOR_APPROVAL | Trang chủ v3 đã làm; toàn bộ bộ giao diện dùng chung và Tailwind chưa hoàn tất. |
-| 1 — UI demo | 1.2 Dữ liệu và quyền demo | NOT_STARTED | Chờ hoàn thành 1.1. |
-| 1 — UI demo | 1.3 Màn hình phụ huynh/học sinh | NOT_STARTED | Chờ hoàn thành 1.2. |
-| 1 — UI demo | 1.4 Màn hình quản trị | NOT_STARTED | Chờ hoàn thành 1.2. |
-| 1 — UI demo | 1.5 Hoàn thiện prototype và chốt UI/MVP | NOT_STARTED | Cần chủ dự án duyệt. |
-| 2 — Backend | 2.1 Hạ tầng và bảo mật nền tảng | NOT_STARTED | Chỉ bắt đầu sau khi chốt UI/MVP. |
+| 1 — UI demo | 1.1 Khởi tạo giao diện nền tảng | DONE | Trang chủ v3, Vào lớp và Mobile Navigation đã hoàn thành và kiểm tra. |
+| 1 — UI demo | 1.2 Dữ liệu và quyền demo | IN_PROGRESS | Đã xây dựng tầng Data Store bền vững (`classStore.ts`), hỗ trợ quản lý dữ liệu cho giáo viên. |
+| 1 — UI demo | 1.3 Màn hình phụ huynh/học sinh | DONE | Trang chủ và trang Vào lớp chi tiết cho phụ huynh/học sinh đã hoạt động. |
+| 1 — UI demo | 1.4 Màn hình quản trị | DONE | Hoàn thành Cổng Quản Trị GVCN Cô Vũ Thị Thiết tại `/cogiaochunhiem` (đăng nhập pass `123`, quản lý thông báo, bài tập, tặng sao Top 10, nhận xét hồ sơ 4 lĩnh vực). |
+| 1 — UI demo | 1.5 Hoàn thiện prototype và chốt UI/MVP | IN_PROGRESS | Sẵn sàng nghiệm thu prototype tổng thể trước khi chuyển sang Backend Cloudflare D1/R2/Workers. |
+| 2 — Backend | 2.1 Hạ tầng và bảo mật nền tảng | NOT_STARTED | Sẽ triển khai sau khi chốt UI/MVP (Cloudflare Workers + D1 + R2 + Firebase Auth). |
 | 2 — Backend | 2.2 Dữ liệu lõi và năm học | NOT_STARTED | Chờ hoàn thành 2.1. |
 | 2 — Backend | 2.3 Tính năng MVP | NOT_STARTED | Chờ hoàn thành 2.2. |
 | 2 — Backend | 2.4 Tính năng sau MVP | NOT_STARTED | Làm theo phạm vi được duyệt. |
@@ -72,7 +72,7 @@ Sau mỗi hạng mục hoàn tất:
 
 | Mã | Nội dung cần chốt | Trạng thái | Ngày gửi |
 |---|---|---|---|
-| APPROVAL-HOME-V3 | Cover theo mẫu, họa tiết nền và bảng Top 10 theo tổng sao | WAITING_FOR_APPROVAL | 2026-09-18 |
+| APPROVAL-TEACHER-ADMIN | Nghiệm thu Cổng Quản Trị GVCN `/cogiaochunhiem` và cơ chế lưu trữ đồng bộ hai chiều | WAITING_FOR_APPROVAL | 2026-09-19 |
 
 Khi cần xác nhận, dùng mẫu sau:
 
@@ -86,6 +86,8 @@ Khi cần xác nhận, dùng mẫu sau:
 
 | Ngày | Mã bước | Công việc hoàn thành | Kết quả đã kiểm tra | File/liên kết liên quan |
 |---|---|---|---|---|
+| 2026-09-19 | 1.4 | Nâng cấp Cổng Quản Trị GVCN theo yêu cầu phản hồi: Thời gian cập nhật tự động thời gian thực; Filter select tìm nhanh học sinh nhận sao; Tự do ghi chú lý do khen thưởng; Bảng tổng hợp sao cả lớp (toàn bộ 40 học sinh); Chỉnh sửa trực tiếp nội dung lời nhắn trong lịch sử. | Build thành công; kiểm tra tự động qua browser subagent tất cả 5 tính năng hoạt động chuẩn xác và mượt mà. | `src/TeacherAdmin.tsx`, `src/teacher-admin.css`, `src/services/classStore.ts` |
+| 2026-09-19 | 1.4 | Xây dựng Cổng Quản Trị Giáo Viên (`/cogiaochunhiem`) kèm xác thực mật khẩu `123` và Tầng dữ liệu State Store bền vững | Đã build và test trình duyệt: Đăng nhập pass `123` thành công, quản lý nhận xét hằng ngày, bài tập về nhà, tặng sao Top 10 và nhận xét hồ sơ học sinh 4 lĩnh vực đồng bộ tức thì ra trang chủ. | `src/TeacherAdmin.tsx`, `src/teacher-admin.css`, `src/services/classStore.ts`, `src/App.tsx`, `src/Classroom.tsx` |
 | 2026-09-17 | 1.1 | Khởi tạo frontend và trang chủ demo cho lớp 2A16 | `npm run build` thành công; đã tạo layout responsive, hình minh họa trường học, animation, lối tắt và tin tức mock data. | `src/App.tsx`, `src/styles.css`, `src/assets/classroom-hero.png` |
 
 Khi có công việc hoàn thành, thêm theo mẫu:

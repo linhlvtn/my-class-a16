@@ -73,4 +73,4 @@
   .class-student p,.class-view{font-size:14px}
   .class-status{font-size:13px}
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.score-star,.birthday-card,.birthday-crown,.student-track,.bottom-navigation .bottom-nav-icon{animation:none!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.score-star,.podium-medal-img,.birthday-card,.birthday-crown,.student-track,.bottom-navigation .bottom-nav-icon{animation:none!important}}
