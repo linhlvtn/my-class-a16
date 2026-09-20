@@ -48,53 +48,19 @@ function jsonResponse(data: any, status = 200) {
 async function ensureDbInitialized(db: any) {
   if (!db) return
 
-  // 1. Create tables
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS students (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
-      birthday TEXT NOT NULL,
-      avatar TEXT DEFAULT ''
-    );
-    CREATE TABLE IF NOT EXISTS daily_notice (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      title TEXT NOT NULL,
-      date TEXT NOT NULL,
-      time TEXT NOT NULL,
-      highlight TEXT NOT NULL,
-      body TEXT NOT NULL,
-      reminder TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS homework (
-      id TEXT PRIMARY KEY,
-      subject TEXT NOT NULL,
-      task TEXT NOT NULL,
-      order_num INTEGER DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS star_awards (
-      id TEXT PRIMARY KEY,
-      student_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      stars INTEGER NOT NULL,
-      reason TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS student_reviews (
-      id TEXT PRIMARY KEY,
-      student_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      time TEXT NOT NULL,
-      tag TEXT NOT NULL,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      next TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS student_skills (
-      student_id INTEGER NOT NULL,
-      area_name TEXT NOT NULL,
-      score INTEGER NOT NULL,
-      PRIMARY KEY (student_id, area_name)
-    );
-  `)
+  // 1. Create tables one by one using prepare().run() to avoid D1 exec newline bugs
+  const tableSqls = [
+    'CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, name TEXT NOT NULL, birthday TEXT NOT NULL, avatar TEXT DEFAULT "");',
+    'CREATE TABLE IF NOT EXISTS daily_notice (id INTEGER PRIMARY KEY CHECK (id = 1), title TEXT NOT NULL, date TEXT NOT NULL, time TEXT NOT NULL, highlight TEXT NOT NULL, body TEXT NOT NULL, reminder TEXT NOT NULL);',
+    'CREATE TABLE IF NOT EXISTS homework (id TEXT PRIMARY KEY, subject TEXT NOT NULL, task TEXT NOT NULL, order_num INTEGER DEFAULT 0);',
+    'CREATE TABLE IF NOT EXISTS star_awards (id TEXT PRIMARY KEY, student_id INTEGER NOT NULL, date TEXT NOT NULL, stars INTEGER NOT NULL, reason TEXT NOT NULL);',
+    'CREATE TABLE IF NOT EXISTS student_reviews (id TEXT PRIMARY KEY, student_id INTEGER NOT NULL, date TEXT NOT NULL, time TEXT NOT NULL, tag TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL, next TEXT NOT NULL);',
+    'CREATE TABLE IF NOT EXISTS student_skills (student_id INTEGER NOT NULL, area_name TEXT NOT NULL, score INTEGER NOT NULL, PRIMARY KEY (student_id, area_name));'
+  ]
+
+  for (const sql of tableSqls) {
+    await db.prepare(sql).run()
+  }
 
   // 2. Check if students table is empty
   const countResult = await db.prepare('SELECT count(*) as count FROM students').first()
@@ -329,7 +295,7 @@ export default {
           const body = await request.json() as any
           const items = body.items || []
 
-          await env.DB.exec('DELETE FROM homework;')
+          await env.DB.prepare('DELETE FROM homework').run()
           if (items.length > 0) {
             const stmts = items.map((item: any, idx: number) =>
               env.DB.prepare('INSERT INTO homework (id, subject, task, order_num) VALUES (?, ?, ?, ?)')
