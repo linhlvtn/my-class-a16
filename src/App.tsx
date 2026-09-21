@@ -14,21 +14,23 @@ import Classroom from './Classroom'
 import MobileNavigation from './MobileNavigation'
 import TeacherAdmin from './TeacherAdmin'
 import { classStore, DailyNoticeData, HomeworkItem } from './services/classStore'
+import { getTimetable, WEEKDAYS } from './data/timetable'
+import { ContactSettings, getContactSettings } from './data/contactSettings'
 
-function TeacherContact() {
+function TeacherContact({ contact }: { contact: ContactSettings }) {
   return <section className="teacher-contact" aria-labelledby="teacher-contact-title">
-    <div className="teacher-copy"><span className="teacher-label">👩🏻‍🏫 GVCN LỚP 2A16</span><h5 id="teacher-contact-title">Cô Vũ Thị Thiết</h5><a className="teacher-phone" href="tel:0982296281" aria-label="Gọi cô Vũ Thị Thiết, số 0982296281"><span>☎</span> 0982 296 281</a><p>Phụ huynh cần hỗ trợ, hãy liên hệ với cô nhé!</p></div><img src={teacherContact} alt="Minh họa cô giáo chủ nhiệm thân thiện đang chào các em học sinh" loading="lazy" />
+    <div className="teacher-copy"><span className="teacher-label">👩🏻‍🏫 GVCN LỚP 2A16</span><h5 id="teacher-contact-title">Cô Vũ Thị Thiết</h5><a className="teacher-phone" href={`tel:${contact.phone}`} aria-label={`Gọi cô Vũ Thị Thiết, số ${contact.phone}`}><span>☎</span> {contact.phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')}</a><p>Phụ huynh cần hỗ trợ, hãy liên hệ với cô nhé!</p></div><img src={teacherContact} alt="Minh họa cô giáo chủ nhiệm thân thiện đang chào các em học sinh" loading="lazy" />
   </section>
 }
 
-function UniformReminder() {
+function UniformReminder({ contact }: { contact: ContactSettings }) {
   return <section className="uniform-board" aria-labelledby="uniform-title">
     <div className="uniform-heading"><span aria-hidden="true">✨</span><div><h4 id="uniform-title">Hôm nay mình mặc gì?</h4><p>Nhớ đúng áo, vui đến trường!</p></div><span aria-hidden="true">⭐</span></div>
     <div className="uniform-pair">
       <article className="uniform-choice uniform-white"><img src={whiteUniform} alt="Áo đồng phục trắng, viền tay và túi kẻ xanh navy" loading="lazy"/><h5>Đồng phục trắng</h5><div className="uniform-days"><span>Thứ 2</span><span>Thứ 3</span></div></article>
       <article className="uniform-choice uniform-red"><img src={redUniform} alt="Áo đồng phục đỏ, cổ và viền tay xanh navy" loading="lazy"/><h5>Đồng phục đỏ</h5><div className="uniform-days"><span>Thứ 4</span><span>Thứ 6</span></div></article>
     </div>
-    <p className="uniform-shoes">👟 Nhớ đi giày thể thao hoặc dép quai hậu nhé!</p><TeacherContact />
+    <p className="uniform-shoes">👟 Nhớ đi giày thể thao hoặc dép quai hậu nhé!</p><TeacherContact contact={contact} />
   </section>
 }
 
@@ -90,24 +92,15 @@ function DailyUpdate({ notice, homework }: { notice: DailyNoticeData; homework: 
   </section>
 }
 
-function QuickActions({ notificationOpen, onToggleNotification, notice }: { notificationOpen: boolean; onToggleNotification: () => void; notice: DailyNoticeData }) {
+function QuickActions({ notificationOpen, onToggleNotification, notice, contact }: { notificationOpen: boolean; onToggleNotification: () => void; notice: DailyNoticeData; contact: ContactSettings }) {
   return <aside className="quick-actions" aria-label="Liên hệ và thông báo nhanh">
-    <a className="quick-action quick-call" href="tel:0982296281" aria-label="Gọi nhanh cô Vũ Thị Thiết, số 0982296281"><span aria-hidden="true">☎</span><b>Gọi cô giáo chủ nhiệm</b></a>
-    <a className="quick-action quick-zalo" href="https://zalo.me/0982296281" target="_blank" rel="noreferrer" aria-label="Mở Nhóm Lớp trên Zalo"><span className="zalo-mark" aria-hidden="true">Z</span><b>Nhóm Lớp</b></a>
+    <a className="quick-action quick-call" href={`tel:${contact.phone}`} aria-label={`Gọi nhanh cô Vũ Thị Thiết, số ${contact.phone}`}><span aria-hidden="true">☎</span><b>Gọi cô giáo chủ nhiệm</b></a>
+    <a className="quick-action quick-zalo" href={contact.zaloUrl} target="_blank" rel="noreferrer" aria-label="Mở Nhóm Lớp trên Zalo"><span className="zalo-mark" aria-hidden="true">Z</span><b>Nhóm Lớp</b></a>
     <div className="quick-notification"><button className="quick-action quick-bell" type="button" onClick={onToggleNotification} aria-expanded={notificationOpen} aria-controls="latest-class-notice"><span aria-hidden="true">🔔</span><i aria-hidden="true" /><b>Thông báo</b></button>{notificationOpen && <div id="latest-class-notice" className="latest-notice" role="status"><span className="latest-notice-top">🔔 CÓ THÔNG BÁO MỚI</span><strong>Cô vừa cập nhật: {notice.title}</strong><p>{notice.highlight}</p><a href="#daily-update" onClick={onToggleNotification}>Xem thông báo của cô →</a></div>}</div>
   </aside>
 }
 
 const birthdayMonthStudents = new Set(['Phạm Minh Khôi', 'Nguyễn Ngọc Thảo'])
-const weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu']
-const lessonTimes = ['07:45 – 08:20', '08:30 – 09:05', '09:15 – 09:50', '10:00 – 10:35', '13:45 – 14:20', '14:30 – 15:05', '15:15 – 15:50', '15:55 – 17:15']
-const weeklySchedule = [
-  ['HĐTN', 'Tiếng Việt (Đọc)', 'Tiếng Việt (Đọc)', 'Toán', 'GDTC 2', 'Âm nhạc 2', 'TNXH', 'CLB NGCK'],
-  ['Tiếng Việt (Viết)', 'Tiếng Việt (Nói và nghe)', 'Toán', 'Mĩ thuật', 'Tiếng Anh', 'Giảng dạy BTL', 'Đạo đức', 'CLB NGCK'],
-  ['Tiếng Việt (Đọc)', 'Tiếng Việt (Đọc)', 'Toán', 'TNXH', 'HĐCC', 'GDTC', 'Âm nhạc', 'CLB NGCK'],
-  ['Tiếng Việt (Viết)', 'STEM', 'Toán', 'Tiếng Việt (LTVC)', 'HĐCC', 'HĐTN', 'Tiếng Anh', 'CLB NGCK'],
-  ['Tiếng Việt (TLV)', 'Tiếng Việt (Đọc)', 'Toán', 'Đọc sách', 'TA – STEM', 'GDTC', 'HĐTN', 'CLB NGCK'],
-]
 const albums = [{ title: 'Ngày đầu tiên đến lớp', image: welcome, label: 'CHÀO NĂM HỌC MỚI', text: 'Những nụ cười rạng rỡ trong ngày đón năm học mới của lớp 2A16.' }, { title: 'Một ngày thật đáng yêu', image: schoolDay, label: 'KHOẢNH KHẮC NHỎ', text: 'Một khoảnh khắc xinh xắn trong ngôi nhà chung 2A16.' }, { title: 'Cùng nhau viết ước mơ', image: hero, label: 'THẾ GIỚI CỦA CHÚNG MÌNH', text: 'Minh họa về hành trình cùng học, cùng chơi và cùng lớn khôn.' }]
 
 function Portrait({ index }: { index: number }) {
@@ -193,6 +186,20 @@ export default function App() {
   }
 
   const [day, setDay] = useState(3)
+  const [contact, setContact] = useState(getContactSettings)
+
+  useEffect(() => {
+    const refreshContact = () => setContact(getContactSettings())
+    window.addEventListener('class-contact-updated', refreshContact)
+    return () => window.removeEventListener('class-contact-updated', refreshContact)
+  }, [])
+  const [timetable, setTimetable] = useState(getTimetable)
+
+  useEffect(() => {
+    const refreshTimetable = () => setTimetable(getTimetable())
+    window.addEventListener('class-timetable-updated', refreshTimetable)
+    return () => window.removeEventListener('class-timetable-updated', refreshTimetable)
+  }, [])
   const [period, setPeriod] = useState('Tuần')
   const ranking = classStore.getLeaderboard(period === 'Tuần' ? 'week' : 'month')
   const [read, setRead] = useState(false)
@@ -220,6 +227,7 @@ export default function App() {
           notificationOpen={notificationOpen}
           onToggleNotification={() => setNotificationOpen(!notificationOpen)}
           notice={storeData.dailyNotice}
+        contact={contact}
         />
         <MobileNavigation route={route} />
       </>
@@ -285,15 +293,15 @@ export default function App() {
               <span className="muted">Năm học 2026 – 2027</span>
             </div>
             <div className="schedule-desktop" role="table" aria-label="Thời khóa biểu lớp 2A16">
-              <div className="schedule-row schedule-head" role="row"><span>Tiết</span>{weekdays.map(name=><b key={name}>{name}</b>)}</div>
-              {Array.from({length:8},(_,lessonIndex)=><div className={`schedule-row ${lessonIndex===4?'afternoon-start':''}`} role="row" key={lessonIndex}>{lessonIndex===4&&<div className="afternoon-banner">☁️ BUỔI CHIỀU · 13:45 – 17:15</div>}<span className="period"><b>{lessonIndex+1}</b><small>{lessonTimes[lessonIndex]}</small></span>{weeklySchedule.map((schedule,dayIndex)=><span className={`schedule-cell tone-${(lessonIndex + dayIndex) % 5}`} role="cell" key={weekdays[dayIndex]}>{schedule[lessonIndex]}</span>)}</div>)}
+              <div className="schedule-row schedule-head" role="row"><span>Tiết</span>{WEEKDAYS.map(name=><b key={name}>{name}</b>)}</div>
+              {Array.from({length:8},(_,lessonIndex)=><div className={`schedule-row ${lessonIndex===4?'afternoon-start':''}`} role="row" key={lessonIndex}>{lessonIndex===4&&<div className="afternoon-banner">☁️ BUỔI CHIỀU · 13:45 – 17:15</div>}<span className="period"><b>{lessonIndex+1}</b><small>{timetable.times[lessonIndex]}</small></span>{timetable.schedule.map((schedule,dayIndex)=><span className={`schedule-cell tone-${(lessonIndex + dayIndex) % 5}`} role="cell" key={WEEKDAYS[dayIndex]}>{schedule[lessonIndex]}</span>)}</div>)}
             </div>
             <div className="schedule-mobile">
-              <div className="day-tabs" aria-label="Chọn ngày học">{weekdays.map((name,i)=><button key={name} aria-pressed={day===i} className={day===i?'active':''} onClick={()=>setDay(i)}>{`T${i+2}`}</button>)}</div>
+              <div className="day-tabs" aria-label="Chọn ngày học">{WEEKDAYS.map((name,i)=><button key={name} aria-pressed={day===i} className={day===i?'active':''} onClick={()=>setDay(i)}>{`T${i+2}`}</button>)}</div>
               <div className="mobile-session-title">☀️ Buổi sáng <span>07:45 – 10:55</span></div>
-              {weeklySchedule[day].map((lesson,i)=><div className={`lesson ${i===4?'lesson-afternoon':''}`} key={`${day}-${i}`}>{i===4&&<span className="mobile-afternoon">☁️ Buổi chiều · 13:45 – 17:15</span>}<span className={`subject-icon color-${i%4}`}>{['📖','🔢','🎨','🌱'][i%4]}</span><div><b>{lesson}</b><small>Tiết {i+1} · {lessonTimes[i]}</small></div><span className="lesson-number">0{i+1}</span></div>)}
+              {timetable.schedule[day].map((lesson,i)=><div className={`lesson ${i===4?'lesson-afternoon':''}`} key={`${day}-${i}`}>{i===4&&<span className="mobile-afternoon">☁️ Buổi chiều · 13:45 – 17:15</span>}<span className={`subject-icon color-${i%4}`}>📖</span><div><b>{lesson}</b><small>Tiết {i+1} · {timetable.times[i]}</small></div><span className="lesson-number">0{i+1}</span></div>)}
             </div>
-            <UniformReminder />
+            <UniformReminder contact={contact} />
             <div className="school-notes" id="school-notes">
               <h4>🌈 Lưu ý khi đến lớp</h4>
               <ul>
@@ -476,6 +484,7 @@ export default function App() {
       notificationOpen={notificationOpen}
       onToggleNotification={() => setNotificationOpen(!notificationOpen)}
       notice={storeData.dailyNotice}
+    contact={contact}
     />
     <MobileNavigation route={route} />
 

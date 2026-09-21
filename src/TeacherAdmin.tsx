@@ -6,6 +6,8 @@ import rankStar2 from './assets/rank-star-2.png'
 import rankStar3 from './assets/rank-star-3.png'
 import hero from './assets/classroom-v2.png'
 import { classStore, StudentReviewItem } from './services/classStore'
+import { getTimetable, saveTimetable, Timetable, WEEKDAYS } from './data/timetable'
+import { ContactSettings, getContactSettings, saveContactSettings } from './data/contactSettings'
 import './teacher-admin.css'
 
 // ── Lucide React Icons ────────────────────────────────────────────────────────
@@ -49,6 +51,8 @@ import {
   Upload,
   RotateCcw,
   User,
+  HardDrive,
+  Settings,
 } from 'lucide-react'
 
 // ── Image Compressor for Avatar Uploads (Resizes & crops square to max 256x256, ~15-25KB) ──
@@ -202,8 +206,10 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
 
   // App / Store State
   const [storeData, setStoreData] = useState(() => classStore.getData())
-  const [activeTab, setActiveTab] = useState<'daily' | 'stars' | 'students' | 'manage'>('daily')
+  const [activeTab, setActiveTab] = useState<'daily' | 'schedule' | 'stars' | 'students' | 'manage'>('daily')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [storageUsage, setStorageUsage] = useState<{ usedBytes: number; freeLimitBytes: number; percent: number } | null>(null)
 
   // Tab 4: Student info management & Modal edit state
   const [manageSearch, setManageSearch] = useState('')
@@ -216,6 +222,8 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
 
   // Tab 1: Daily notice form (Thời gian tự động thời gian thực)
   const [noticeForm, setNoticeForm] = useState(() => ({ ...storeData.dailyNotice }))
+  const [scheduleForm, setScheduleForm] = useState<Timetable>(() => getTimetable())
+  const [contactForm, setContactForm] = useState<ContactSettings>(() => getContactSettings())
   const [newHwSubject, setNewHwSubject] = useState('')
   const [newHwTask, setNewHwTask] = useState('')
 
@@ -241,6 +249,13 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
   const [editReviewTitle, setEditReviewTitle] = useState('')
   const [editReviewContent, setEditReviewContent] = useState('')
   const [editReviewNext, setEditReviewNext] = useState('')
+
+  useEffect(() => {
+    fetch('/api/usage')
+      .then(res => res.ok ? res.json() : Promise.reject(new Error('Usage unavailable')))
+      .then(payload => { if (payload?.success) setStorageUsage(payload) })
+      .catch(() => setStorageUsage(null))
+  }, [])
 
   // Subscribe to store updates
   useEffect(() => {
@@ -299,6 +314,27 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
     classStore.updateDailyNotice(updated)
     setNoticeForm(updated)
     showToast(`Đã cập nhật thông tin lên Trang chủ lúc ${timeStr}!`)
+  }
+
+  const handleSaveSchedule = (e: React.FormEvent) => {
+    e.preventDefault()
+    saveTimetable({
+      schedule: scheduleForm.schedule.map(day => day.map(subject => subject.trim())),
+      times: scheduleForm.times.map(time => time.trim())
+    })
+    showToast('Đã lưu thời khóa biểu mới trên Trang chủ!')
+  }
+
+  const handleSaveContact = (e: React.FormEvent) => {
+    e.preventDefault()
+    const phone = contactForm.phone.replace(/\D/g, '')
+    if (phone.length < 9 || !contactForm.zaloUrl.trim()) {
+      showToast('Cô vui lòng nhập số điện thoại và link Nhóm Lớp Zalo hợp lệ.')
+      return
+    }
+    saveContactSettings({ phone, zaloUrl: contactForm.zaloUrl.trim() })
+    setContactForm({ phone, zaloUrl: contactForm.zaloUrl.trim() })
+    showToast('Đã cập nhật thông tin liên hệ trên Trang chủ!')
   }
 
   // Handle Homework Add / Remove
@@ -561,6 +597,17 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
           </div>
 
           <div className="admin-nav-actions">
+            <div className="admin-account-menu">
+              <button type="button" className="admin-account-trigger" onClick={() => setAccountMenuOpen(open => !open)} aria-expanded={accountMenuOpen}>
+                <Settings size={18} />
+              </button>
+              {accountMenuOpen && <div className="admin-account-dropdown">
+                <span className="account-dropdown-title"><HardDrive size={15} /> Dung lượng D1</span>
+                <strong>{storageUsage ? (storageUsage.usedBytes / (1024 * 1024)).toFixed(2) + ' MB' : 'Đang kiểm tra…'} <small>{storageUsage ? '/ 5 GB miễn phí' : ''}</small></strong>
+                <div className="account-storage-progress"><i style={{ width: (storageUsage?.percent || 0) + '%' }} /></div>
+                {storageUsage && <b>{(storageUsage.percent < 1 ? '< 1' : storageUsage.percent.toFixed(2)) + '% đã sử dụng'}</b>}
+              </div>}
+            </div>
             <a
               href="#home"
               className="btn-view-site"
@@ -615,7 +662,15 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
             className={`admin-tab-btn ${activeTab === 'daily' ? 'active' : ''}`}
             onClick={() => setActiveTab('daily')}
           >
-            <MessageSquare size={17} /> Thông tin hằng ngày &amp; Bài tập
+            <MessageSquare size={17} /> Thông báo của cô giáo
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'schedule'}
+            className={`admin-tab-btn ${activeTab === 'schedule' ? 'active' : ''}`}
+            onClick={() => { setScheduleForm(getTimetable()); setActiveTab('schedule') }}
+          >
+            <BookMarked size={17} /> Thời khóa biểu
           </button>
           <button
             role="tab"
@@ -623,7 +678,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
             className={`admin-tab-btn ${activeTab === 'stars' ? 'active' : ''}`}
             onClick={() => setActiveTab('stars')}
           >
-            <Star size={17} /> Tặng sao &amp; Danh sách cả lớp
+            <Star size={17} /> Khen thưởng HS
           </button>
           <button
             role="tab"
@@ -631,7 +686,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
             className={`admin-tab-btn ${activeTab === 'students' ? 'active' : ''}`}
             onClick={() => setActiveTab('students')}
           >
-            <ClipboardList size={17} /> Hồ sơ &amp; Nhận xét học sinh
+            <ClipboardList size={17} /> Đánh giá HS
           </button>
           <button
             role="tab"
@@ -639,7 +694,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
             className={`admin-tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
             onClick={() => setActiveTab('manage')}
           >
-            <UserCog size={17} /> Quản lý thông tin học sinh
+            <UserCog size={17} /> QL Thông Tin HS
           </button>
         </div>
 
@@ -668,18 +723,6 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                       placeholder="Ví dụ: Hôm nay lớp mình thật xuất sắc!..."
                       required
                     />
-                  </div>
-
-                  {/* Thời gian cập nhật hiển thị: Mặc định theo thời gian thực tự động, không thay đổi */}
-                  <div className="admin-input-group">
-                    <label><Clock size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />Thời gian cập nhật</label>
-                    <div className="realtime-badge">
-                      <Clock size={20} className="realtime-clock-icon" />
-                      <div>
-                        <b>Tự động cập nhật theo thời gian thực khi lưu</b>
-                        <small>Lần cập nhật gần nhất: {noticeForm.time} · {noticeForm.date}</small>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -723,13 +766,13 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
             </div>
 
             {/* Homework Management */}
-            <div className="admin-card">
+            <div className="admin-card homework-admin-card">
               <div className="admin-card-header">
                 <div className="admin-card-title">
                   <div className="card-title-icon card-title-icon--blue"><BookOpen size={20} /></div>
                   <div>
                     <h3>Bài tập về nhà tối nay</h3>
-                    <small>Danh sách bài tập cô giao — phụ huynh nhắc con làm</small>
+                    <small>Cập nhật lúc {storeData.dailyNotice.time} · {storeData.dailyNotice.date}</small>
                   </div>
                 </div>
                 <span className="admin-badge-count">{storeData.homework.length} bài</span>
@@ -747,10 +790,10 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 <tbody>
                   {storeData.homework.map((hw, idx) => (
                     <tr key={hw.id}>
-                      <td><b>{String(idx + 1).padStart(2, '0')}</b></td>
-                      <td><b>{hw.subject}</b></td>
-                      <td>{hw.task}</td>
-                      <td>
+                      <td className="hw-index"><b>{String(idx + 1).padStart(2, '0')}</b></td>
+                      <td className="hw-subject"><b>{hw.subject}</b></td>
+                      <td className="hw-task">{hw.task}</td>
+                      <td className="hw-actions">
                         <button
                           type="button"
                           className="btn-danger-sm"
@@ -803,6 +846,19 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 </form>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'daily' && (
+          <div className="admin-card contact-settings-card">
+            <div className="admin-card-header"><div className="admin-card-title"><div className="card-title-icon card-title-icon--teal"><MessageCircle size={20} /></div><div><h3>Thông tin liên hệ lớp</h3><small>Thông tin này hiển thị ở nút “Gọi cô giáo chủ nhiệm” và “Nhóm Lớp” trên Trang chủ.</small></div></div></div>
+            <form onSubmit={handleSaveContact}>
+              <div className="admin-grid-2">
+                <div className="admin-input-group"><label>Số điện thoại cô giáo</label><input type="tel" inputMode="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })} placeholder="Ví dụ: 0982296281" required /></div>
+                <div className="admin-input-group"><label>Link Nhóm Lớp Zalo</label><input type="url" value={contactForm.zaloUrl} onChange={e => setContactForm({ ...contactForm, zaloUrl: e.target.value })} placeholder="https://zalo.me/g/..." required /></div>
+              </div>
+              <button type="submit" className="btn-save-primary"><Save size={17} /> Lưu thông tin liên hệ</button>
+            </form>
           </div>
         )}
 
@@ -1407,6 +1463,28 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
           </div>
         )}
 
+        {/* ════════════════ TAB: TIMETABLE ════════════════ */}
+        {activeTab === 'schedule' && (
+          <div className="admin-card schedule-admin-card">
+            <div className="admin-card-header">
+              <div className="admin-card-title">
+                <div className="card-title-icon card-title-icon--teal"><BookMarked size={22} /></div>
+                <div><h3>Biên soạn thời khóa biểu</h3><small>Nhập tên môn học và thời gian cho từng tiết. Nội dung sẽ hiển thị ngay tại Trang chủ.</small></div>
+              </div>
+            </div>
+            <form onSubmit={handleSaveSchedule}>
+              <div className="schedule-editor" role="table" aria-label="Biên soạn thời khóa biểu">
+                <div className="schedule-editor-row schedule-editor-head" role="row"><b>Tiết / giờ</b>{WEEKDAYS.map(day => <b key={day}>{day}</b>)}</div>
+                {Array.from({ length: 8 }, (_, lessonIndex) => <div className={`schedule-editor-row ${lessonIndex === 4 ? 'schedule-editor-afternoon' : ''}`} role="row" key={lessonIndex}>
+                  <label className="schedule-time-field"><span>Tiết {lessonIndex + 1}</span><input value={scheduleForm.times[lessonIndex] || ''} onChange={e => setScheduleForm(current => ({ ...current, times: current.times.map((time, index) => index === lessonIndex ? e.target.value : time) }))} aria-label={`Thời gian tiết ${lessonIndex + 1}`} /></label>
+                  {WEEKDAYS.map((day, dayIndex) => <input key={day} value={scheduleForm.schedule[dayIndex]?.[lessonIndex] || ''} onChange={e => setScheduleForm(current => ({ ...current, schedule: current.schedule.map((items, index) => index === dayIndex ? items.map((item, itemIndex) => itemIndex === lessonIndex ? e.target.value : item) : items) }))} aria-label={`${day}, tiết ${lessonIndex + 1}`} placeholder="Tên môn học" />)}
+                </div>)}
+              </div>
+              <div className="schedule-admin-actions"><span>💡 Cô có thể thay đổi tự do tên môn và khung giờ của từng tiết.</span><button type="submit" className="btn-save-primary"><Save size={17} /> Lưu thời khóa biểu</button></div>
+            </form>
+          </div>
+        )}
+
         {/* ════════════════ TAB 4: MANAGE STUDENT INFO ════════════════ */}
         {activeTab === 'manage' && (
           <div className="admin-card">
@@ -1447,14 +1525,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 </div>
               </div>
 
-              <div className="manage-stats-pills">
-                <span className="manage-stat-pill">
-                  <Users size={14} /> Tổng: <b>40</b> con
-                </span>
-                <span className="manage-stat-pill">
-                  <Camera size={14} /> Đã có ảnh riêng: <b>{Object.keys(storeData.avatars || {}).length}</b>/40
-                </span>
-              </div>
+
             </div>
 
             {/* Grid of all 40 students */}

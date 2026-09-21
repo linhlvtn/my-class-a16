@@ -6,3 +6,16 @@
 .star-avatar>.portrait{position:static;width:82px;height:82px;display:block;background-color:#dbe9d0;background-size:850% auto;border:4px solid white;font-size:inherit}
 @media(max-width:700px){.carousel-toolbar button{display:none}.carousel-toolbar:after{content:'Vuốt để xem ↔';font-size:11px;color:#637968}.portrait{background-size:850% auto}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}.student-lane{overflow-x:auto}.student-track{padding:0 16px}.student-card[aria-hidden=true]{display:none}}
+
+
+/* Mobile timetable: keep the title and school year cleanly stacked. */
+@media(max-width:700px){
+  .timetable .card-heading{display:block;margin-bottom:16px}
+  .timetable .card-heading h3{font-size:22px;line-height:1.2;white-space:nowrap}
+  .timetable .card-heading .muted{display:block;margin-top:5px;font-size:13px;font-weight:800;line-height:1.35}
+  .schedule-mobile .lesson{gap:10px;padding:14px 0}
+  .schedule-mobile .subject-icon{width:48px;height:48px;flex:0 0 48px;font-size:23px}
+  .schedule-mobile .lesson b{font-size:16px;line-height:1.3}
+  .schedule-mobile .lesson small{font-size:12px;line-height:1.45}
+  .schedule-mobile .lesson-number{font-size:22px}
+}

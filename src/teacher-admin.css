@@ -2404,3 +2404,143 @@
 }
 
 
+
+
+/* Teacher timetable editor */
+.schedule-editor{overflow:auto;border:1px solid #e4eee9;border-radius:16px;background:#fff}.schedule-editor-row{display:grid;grid-template-columns:150px repeat(5,minmax(145px,1fr));gap:8px;min-width:900px;padding:8px 12px;border-bottom:1px solid #edf2ee}.schedule-editor-row:last-child{border-bottom:0}.schedule-editor-head{align-items:center;background:#edf7f0;color:#256150;font-size:13px;font-weight:800}.schedule-editor-row input{width:100%;min-height:42px;border:1px solid #dfe9e2;border-radius:10px;padding:8px 10px;color:#294b47;font:600 13px Nunito,sans-serif}.schedule-editor-row input:focus{border-color:#2c9d7a;outline:3px solid #bdebdc}.schedule-time-field span{display:block;margin:0 0 4px;font-size:12px;font-weight:800;color:#41675d}.schedule-editor-afternoon{background:#fff8ef}.schedule-admin-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;color:#688077;font-size:13px;font-weight:700}.schedule-admin-actions .btn-save-primary{margin-left:auto}@media(max-width:700px){.schedule-admin-actions{display:grid;grid-template-columns:1fr;margin-top:15px}.schedule-admin-actions .btn-save-primary{margin-left:0;width:100%;justify-content:center}.schedule-editor-row{grid-template-columns:130px repeat(5,minmax(125px,1fr));padding:7px}.schedule-admin-card .admin-card-title h3{font-size:20px;line-height:1.25}.schedule-admin-card .admin-card-title small{font-size:12px;line-height:1.45}}
+
+
+/* Compact D1 free-storage monitor */
+.storage-usage-card{display:flex;align-items:center;justify-content:space-between;gap:28px;margin:20px 0 24px;padding:19px 22px;border:1px solid #cfe8df;border-radius:17px;background:linear-gradient(100deg,#f1fffa,#fffdf5);box-shadow:0 5px 16px #2064510b}.storage-usage-copy span{display:flex;align-items:center;gap:8px;color:#216456;font:800 17px 'Baloo 2',sans-serif}.storage-usage-copy p{margin:4px 0 0;color:#71837b;font-size:12px;font-weight:700}.storage-usage-meter{width:min(390px,45%);min-width:260px}.storage-usage-values{display:flex;align-items:baseline;gap:7px}.storage-usage-values strong{color:#147461;font:800 21px 'Baloo 2',sans-serif}.storage-usage-values small{color:#6e8078;font-size:12px;font-weight:800}.storage-progress{height:11px;margin:8px 0 5px;overflow:hidden;border-radius:99px;background:#dfeee8;box-shadow:inset 0 1px 2px #376d5a1c}.storage-progress i{display:block;height:100%;min-width:3px;border-radius:inherit;background:linear-gradient(90deg,#45c896,#0c8f79);transition:width .4s ease}.storage-usage-meter>b{color:#4d7569;font-size:11px}@media(max-width:700px){.storage-usage-card{display:block;margin:15px 0 18px;padding:16px}.storage-usage-copy span{font-size:16px}.storage-usage-copy p{font-size:11px;line-height:1.45}.storage-usage-meter{width:100%;min-width:0;margin-top:14px}.storage-usage-values strong{font-size:20px}}
+
+
+/* Compact storage disclosure in the signed-in teacher menu. */
+.admin-account-menu{position:relative}.admin-account-trigger{display:flex;align-items:center;gap:7px;border:1px solid #dbe9e2;border-radius:10px;background:#f4fbf7;color:#286253;padding:9px 11px;font:800 12px Nunito,sans-serif;cursor:pointer}.admin-account-trigger:hover{background:#e5f6ee}.admin-account-trigger i{font-style:normal;font-size:15px;line-height:1}.admin-account-dropdown{position:absolute;z-index:20;right:0;top:calc(100% + 9px);width:250px;padding:14px;border:1px solid #cce6dc;border-radius:14px;background:#fffefa;box-shadow:0 13px 30px #1e514526;color:#355f54}.account-dropdown-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:900}.account-dropdown-title svg{color:#159477}.admin-account-dropdown strong{display:block;margin-top:9px;color:#147461;font:800 20px 'Baloo 2',sans-serif}.admin-account-dropdown strong small{color:#71837b;font:800 11px Nunito,sans-serif}.account-storage-progress{height:8px;overflow:hidden;margin:8px 0 6px;border-radius:99px;background:#e0efe9}.account-storage-progress i{display:block;min-width:3px;height:100%;border-radius:inherit;background:linear-gradient(90deg,#45c896,#0c8f79)}.admin-account-dropdown>b{font-size:11px;color:#55766b}@media(max-width:700px){.admin-account-trigger span{display:none}.admin-account-trigger{padding:9px}.admin-account-dropdown{right:-46px;width:235px}.admin-nav-actions{gap:7px}}
+
+
+/* Mobile homework cards: keeps each instruction easy to scan and act on. */
+@media (max-width: 700px) {
+  .homework-admin-card .admin-card-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .homework-admin-card .admin-card-title {
+    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .homework-admin-card .admin-card-title h3 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.3;
+  }
+
+  .homework-admin-card .admin-card-title small {
+    display: block;
+    margin-top: 4px;
+    color: #8b7d6e;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.45;
+  }
+
+  .homework-admin-card .admin-badge-count {
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  .homework-admin-card .hw-table {
+    display: block;
+    margin: 4px 0 16px;
+    border: 0;
+  }
+
+  .homework-admin-card .hw-table thead {
+    display: none;
+  }
+
+  .homework-admin-card .hw-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .homework-admin-card .hw-table tr {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    padding: 13px;
+    border: 1px solid #ece2d4;
+    border-radius: 16px;
+    background: #fffefa;
+    box-shadow: 0 5px 14px rgba(110, 79, 37, 0.06);
+  }
+
+  .homework-admin-card .hw-table td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .homework-admin-card .hw-table tr:hover td {
+    background: transparent;
+  }
+
+  .homework-admin-card .hw-index {
+    grid-row: 1 / span 3;
+    display: grid;
+    place-items: center;
+    min-height: 48px;
+    border-radius: 12px;
+    color: #1c786d;
+    background: #e5f6f0 !important;
+    font-size: 13px !important;
+  }
+
+  .homework-admin-card .hw-subject {
+    grid-column: 2 / -1;
+    align-self: end;
+    color: #2f4b46;
+    font-size: 15px !important;
+    line-height: 1.3;
+  }
+
+  .homework-admin-card .hw-task {
+    grid-column: 2 / -1;
+    padding: 10px 11px !important;
+    border-radius: 11px;
+    color: #60564b;
+    background: #faf6ed !important;
+    font-size: 14px !important;
+    font-weight: 650;
+    line-height: 1.5;
+  }
+
+  .homework-admin-card .hw-actions {
+    grid-column: 3;
+    grid-row: 3;
+    justify-self: end;
+    align-self: end;
+    margin-top: 2px;
+  }
+
+  .homework-admin-card .hw-actions .btn-danger-sm {
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  .homework-admin-card .hw-table td[colspan] {
+    grid-column: 1 / -1;
+    padding: 20px !important;
+    text-align: center !important;
+    background: #faf6ed !important;
+    border-radius: 12px;
+    line-height: 1.5;
+  }
+}

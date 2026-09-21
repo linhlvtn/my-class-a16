@@ -265,6 +265,24 @@ export default {
           })
         }
 
+        // GET /api/usage - Small, privacy-safe D1 storage monitor for the teacher portal
+        if (url.pathname === '/api/usage' && request.method === 'GET') {
+          const [pageCountRow, pageSizeRow] = await Promise.all([
+            env.DB.prepare('PRAGMA page_count').first(),
+            env.DB.prepare('PRAGMA page_size').first()
+          ])
+          const pageCount = Number(pageCountRow?.page_count || 0)
+          const pageSize = Number(pageSizeRow?.page_size || 4096)
+          const usedBytes = pageCount * pageSize
+          const freeLimitBytes = 5 * 1024 * 1024 * 1024
+          return jsonResponse({
+            success: true,
+            usedBytes,
+            freeLimitBytes,
+            percent: Math.min(100, Number(((usedBytes / freeLimitBytes) * 100).toFixed(4)))
+          })
+        }
+
         // POST /api/notice - Update daily notice
         if (url.pathname === '/api/notice' && request.method === 'POST') {
           const body = await request.json() as any

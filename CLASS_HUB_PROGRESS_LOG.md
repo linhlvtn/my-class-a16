@@ -217,3 +217,9 @@ Khi có công việc hoàn thành, thêm theo mẫu:
 - DONE: Thay ký hiệu sao chữ bằng ảnh sao 3D, thêm hiệu ứng nhún/xoay nhẹ và bóng đổ; áp dụng kích thước riêng cho Top 3, bảng xếp hạng và điện thoại.
 - Asset mới: `src/assets/game-star-3d.png`, tạo bằng imagegen built-in; sao vàng 3D nền trong suốt, không chữ/logo.
 - Không chuyển qua mốc có ghi **Cần xác nhận bắt buộc** khi chưa có xác nhận rõ ràng từ chủ dự án.
+
+## 21/09/2026 — Cải thiện mobile & quản trị thời khóa biểu
+
+- [x] Cân lại tiêu đề thời khóa biểu trên mobile: tiêu đề và năm học hiển thị theo hàng rõ ràng, không còn lệch dòng.
+- [x] Thống nhất biểu tượng sách cho mọi tiết học trên giao diện mobile.
+- [x] Bổ sung tab “Biên soạn thời khóa biểu” trong cổng giáo viên; cô có thể sửa tên môn và khung giờ cho toàn bộ 5 ngày, 8 tiết rồi lưu lại.
