@@ -10,6 +10,7 @@ import gameStar from './assets/game-star-3d.png'
 import rankStar1 from './assets/rank-star-1.png'
 import rankStar2 from './assets/rank-star-2.png'
 import rankStar3 from './assets/rank-star-3.png'
+import birthdayCake from './assets/birthday-cake-cute.png'
 import Classroom from './Classroom'
 import MobileNavigation from './MobileNavigation'
 import TeacherAdmin from './TeacherAdmin'
@@ -131,9 +132,113 @@ function getInitialRoute(): string {
   return window.location.hash || '#home'
 }
 
+const SEEN_NOTICE_KEY = 'class_2a16_seen_notice_key'
+
+function NoticeModal({
+  notice,
+  isOpen,
+  onClose,
+  onViewDetails
+}: {
+  notice: DailyNoticeData
+  isOpen: boolean
+  onClose: () => void
+  onViewDetails: () => void
+}) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen || !notice) return null
+
+  return (
+    <div
+      className="notice-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notice-modal-title"
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div className="notice-modal-card">
+        <button
+          className="notice-modal-close"
+          onClick={onClose}
+          aria-label="Đóng thông báo"
+          title="Đóng thông báo"
+        >
+          ✕
+        </button>
+
+        <div className="notice-modal-badge">
+          <span className="notice-modal-bell" aria-hidden="true">🔔</span>
+          <span>THÔNG BÁO MỚI TỪ CÔ GIÁO CHỦ NHIỆM</span>
+        </div>
+
+        <div className="notice-modal-meta">
+          <time dateTime={`${notice.date}T${notice.time}`}>
+            🕓 Cập nhật lúc <b>{notice.time}</b> · Ngày <b>{notice.date}</b>
+          </time>
+        </div>
+
+        <h2 id="notice-modal-title" className="notice-modal-title">
+          {notice.title}
+        </h2>
+
+        {notice.highlight && (
+          <div className="notice-modal-highlight">
+            <span className="highlight-heart" aria-hidden="true">❤️</span>
+            <p>{notice.highlight}</p>
+          </div>
+        )}
+
+        {notice.body && (
+          <div className="notice-modal-body">
+            <p>{notice.body}</p>
+          </div>
+        )}
+
+        {notice.reminder && (
+          <div className="notice-modal-reminder">
+            <span className="reminder-icon" aria-hidden="true">✏️</span>
+            <div>
+              <b>Lưu ý dành cho bố mẹ:</b>
+              <p>{notice.reminder}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="notice-modal-actions">
+          <button
+            type="button"
+            className="notice-modal-btn notice-modal-btn-primary"
+            onClick={onClose}
+          >
+            ✓ Đã đọc & ghi nhớ
+          </button>
+          <button
+            type="button"
+            className="notice-modal-btn notice-modal-btn-secondary"
+            onClick={onViewDetails}
+          >
+            📖 Xem chi tiết trên trang
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [route, setRoute] = useState(getInitialRoute)
   const [storeData, setStoreData] = useState(() => classStore.getData())
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false)
 
   useEffect(() => {
     const unsub = classStore.subscribe(() => {
@@ -141,6 +246,48 @@ export default function App() {
     })
     return unsub
   }, [])
+
+  useEffect(() => {
+    if (route === '/cogiaochunhiem' || route.startsWith('/cogiaochunhiem')) {
+      setIsNoticeModalOpen(false)
+      return
+    }
+    const notice = storeData.dailyNotice
+    if (!notice || !notice.title) return
+    const noticeKey = `${notice.date}_${notice.time}_${notice.title}`.trim()
+    try {
+      const seenKey = localStorage.getItem(SEEN_NOTICE_KEY)
+      if (seenKey !== noticeKey) {
+        const timer = setTimeout(() => {
+          setIsNoticeModalOpen(true)
+        }, 400)
+        return () => clearTimeout(timer)
+      }
+    } catch (e) {
+      console.error('Error checking seen notice state:', e)
+    }
+  }, [storeData.dailyNotice, route])
+
+  const handleDismissNoticeModal = () => {
+    const notice = storeData.dailyNotice
+    if (notice && notice.title) {
+      const noticeKey = `${notice.date}_${notice.time}_${notice.title}`.trim()
+      try {
+        localStorage.setItem(SEEN_NOTICE_KEY, noticeKey)
+      } catch (e) {
+        console.error('Failed to save seen notice state:', e)
+      }
+    }
+    setIsNoticeModalOpen(false)
+  }
+
+  const handleViewNoticeDetails = () => {
+    handleDismissNoticeModal()
+    const el = document.getElementById('daily-update')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   useEffect(() => {
     const handleNavigation = () => {
@@ -370,7 +517,11 @@ export default function App() {
                 const profileIndex=storeData.names.indexOf(name);
                 const birthday=birthdayMonthStudents.has(name);
                 return <article className={`student-card tint-${i%4} ${birthday?'birthday-card':''}`} key={`${name}-${i}`} aria-hidden={i>=row.length?true:undefined}>
-                  {birthday&&<span className="birthday-crown" aria-label="Sinh nhật trong tháng">🎂</span>}
+                  {birthday && (
+                    <span className="birthday-crown" aria-label="Sinh nhật trong tháng" title="Sinh nhật trong tháng">
+                      <img src={birthdayCake} alt="Bánh sinh nhật" className="birthday-crown-img" />
+                    </span>
+                  )}
                   <Portrait index={profileIndex}/>
                   <b>{name}</b>
                   <small className="student-birthday">{birthday&&<span>✨ Sinh nhật tháng 9<br /></span>}Sinh ngày: {storeData.birthdays[profileIndex]}</small>
@@ -492,5 +643,12 @@ export default function App() {
       <button className="dialog-close" onClick={()=>setModal(null)} aria-label="Đóng ảnh">✕</button>
       {modal&&<img src={modal.image} alt={modal.title}/>}
     </dialog>
+
+    <NoticeModal
+      notice={storeData.dailyNotice}
+      isOpen={isNoticeModalOpen}
+      onClose={handleDismissNoticeModal}
+      onViewDetails={handleViewNoticeDetails}
+    />
   </>
 }

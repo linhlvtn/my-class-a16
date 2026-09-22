@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import hero from './assets/classroom-v2.png'
 import star from './assets/game-star-3d.png'
+import birthdayCake from './assets/birthday-cake-cute.png'
+import {
+  IconGrowth3D,
+  IconHeart3D,
+  getSkill3DIcon
+} from './components/Skill3DIcons'
 import { classStore } from './services/classStore'
 import './classroom.css'
 
@@ -101,8 +107,8 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
                 </span>
                 {avatar(id)}
                 <h3>{name}</h3>
-                <p>🎂 {birthdays[id]}</p>
-                <span className="class-status">🌱 {id % 2 ? 'Tự tin hơn mỗi ngày' : 'Chăm chỉ và tiến bộ'}</span>
+                <p><img src={birthdayCake} alt="Sinh nhật" className="class-inline-cake" /> {birthdays[id]}</p>
+                <span className="class-status"><IconGrowth3D size={16} style={{ verticalAlign: -3, marginRight: 5 }} /> {id % 2 ? 'Tự tin hơn mỗi ngày' : 'Chăm chỉ và tiến bộ'}</span>
                 <div className="class-student-summary">
                   <span>💬 {studentReviewsCount} nhận xét</span>
                   <span><img src={star} alt="" /> {studentStarsCount} sao</span>
@@ -124,7 +130,7 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
             <div>
               <span className="class-kicker">HÀNH TRÌNH CỦA CON</span>
               <h2>{names[selected]}</h2>
-              <p>🎂 {birthdays[selected]} · Lớp 2A16</p>
+              <p><img src={birthdayCake} alt="Sinh nhật" className="class-inline-cake" /> {birthdays[selected]} · Lớp 2A16</p>
             </div>
           </div>
           <div className="class-profile-stats">
@@ -142,24 +148,46 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
         </div>
         <div className="class-detail-grid">
           <aside className="class-progress">
-            <h2>🌱 Con đang lớn lên</h2>
-            <p>Ghi nhận mới nhất từ GVCN</p>
-            {areas.map((area, index) => {
-              const level = selectedSkills[area] ?? (1 + (selected + index) % 3)
-              return (
-                <div className="class-skill" key={area}>
-                  <b>{area}</b>
-                  <span>{levels[level]}</span>
-                  <div className="class-steps" aria-label={`${level + 1} trên 4 mức ghi nhận`}>
-                    {levels.map((_, step) => (
-                      <i key={step} className={step <= level ? 'filled' : ''} />
-                    ))}
+            <div className="class-progress-heading">
+              <span className="class-growth-icon-wrap" aria-hidden="true">
+                <IconGrowth3D size={40} />
+              </span>
+              <div>
+                <h2>Con đang lớn lên</h2>
+                <p>Ghi nhận mới nhất từ GVCN</p>
+              </div>
+            </div>
+
+            <div className="class-skills-list">
+              {areas.map((area, index) => {
+                const level = selectedSkills[area] ?? (1 + (selected + index) % 3)
+                const cleanLabel = area.replace(/^[\p{Emoji}\u200d\s]+/gu, '').trim() || area
+                return (
+                  <div className="class-skill" key={area}>
+                    <div className="class-skill-head">
+                      <span className="class-skill-icon-3d">
+                        {getSkill3DIcon(area, 36)}
+                      </span>
+                      <div className="class-skill-info">
+                        <b>{cleanLabel}</b>
+                        <span className="class-skill-rating">{levels[level]}</span>
+                      </div>
+                    </div>
+                    <div className="class-steps" aria-label={`${level + 1} trên 4 mức ghi nhận`}>
+                      {levels.map((_, step) => (
+                        <i key={step} className={step <= level ? 'filled' : ''} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+
             <div className="class-growth-note">
-              💛 Mỗi bạn có nhịp phát triển riêng. Cùng nhìn vào những cố gắng của con qua từng ngày nhé!
+              <span className="class-growth-note-icon" aria-hidden="true">
+                <IconHeart3D size={24} />
+              </span>
+              <span>Mỗi bạn có nhịp phát triển riêng. Cùng nhìn vào những cố gắng của con qua từng ngày nhé!</span>
             </div>
           </aside>
           <div className="class-history">
