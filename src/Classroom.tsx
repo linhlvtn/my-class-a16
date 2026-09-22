@@ -8,6 +8,7 @@ import {
   getSkill3DIcon
 } from './components/Skill3DIcons'
 import { classStore } from './services/classStore'
+import { getDefaultStudentAvatar } from './data/defaultStudentAvatars'
 import './classroom.css'
 
 const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase()
@@ -47,7 +48,7 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
         className="class-avatar"
         role="img"
         aria-label="Chân dung minh họa"
-        style={{ backgroundImage: `url(${hero})`, backgroundPosition: `${[10, 21, 31, 41, 57, 67, 79, 92][id % 8]}% 40%` }}
+        style={{ backgroundImage: `url(${getDefaultStudentAvatar(names[id])})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       />
     )
   }
@@ -95,6 +96,7 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
           {students.map(({ name, id }) => {
             const studentReviewsCount = classStore.getStudentReviews(id).length
             const studentStarsCount = classStore.getStudentTotalStars(id)
+            const leadershipRole = id === storeData.leadership?.captain ? 'captain' : id === storeData.leadership?.viceCaptain ? 'viceCaptain' : null
             return (
               <button
                 className={`class-student palette-${id % 4}`}
@@ -107,6 +109,7 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
                 </span>
                 {avatar(id)}
                 <h3>{name}</h3>
+                {leadershipRole && <span className={'class-role class-role--' + leadershipRole}>{leadershipRole === 'captain' ? '👑 Lớp trưởng' : '⭐ Lớp phó'}</span>}
                 <p><img src={birthdayCake} alt="Sinh nhật" className="class-inline-cake" /> {birthdays[id]}</p>
                 <span className="class-status"><IconGrowth3D size={16} style={{ verticalAlign: -3, marginRight: 5 }} /> {id % 2 ? 'Tự tin hơn mỗi ngày' : 'Chăm chỉ và tiến bộ'}</span>
                 <div className="class-student-summary">
@@ -130,6 +133,8 @@ export default function Classroom({ names: propNames, birthdays: propBirthdays }
             <div>
               <span className="class-kicker">HÀNH TRÌNH CỦA CON</span>
               <h2>{names[selected]}</h2>
+              {selected === storeData.leadership?.captain && <span className="class-role class-role--captain">👑 Lớp trưởng</span>}
+              {selected === storeData.leadership?.viceCaptain && <span className="class-role class-role--viceCaptain">⭐ Lớp phó</span>}
               <p><img src={birthdayCake} alt="Sinh nhật" className="class-inline-cake" /> {birthdays[selected]} · Lớp 2A16</p>
             </div>
           </div>

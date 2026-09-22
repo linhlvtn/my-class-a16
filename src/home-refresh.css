@@ -98,3 +98,5 @@ footer .wrap>span{font-size:15px!important;font-weight:800!important;line-height
 /* The three cover-card captions need to be easily read at a glance. */
 .cover-cards span{font-size:14px!important;font-weight:800!important;line-height:1.35!important;color:#63756f!important}
 @media(max-width:700px){.cover-cards span{font-size:12px!important;line-height:1.35!important;max-width:105px!important}}
+
+@media(max-width:700px){.teacher-contact h5{font-size:17px}.daily-date{display:flex;align-items:center;gap:20px}.daily-date br{display:none}.daily-date small{display:inline-block}}

@@ -55,7 +55,9 @@ async function ensureDbInitialized(db: any) {
     'CREATE TABLE IF NOT EXISTS homework (id TEXT PRIMARY KEY, subject TEXT NOT NULL, task TEXT NOT NULL, order_num INTEGER DEFAULT 0);',
     'CREATE TABLE IF NOT EXISTS star_awards (id TEXT PRIMARY KEY, student_id INTEGER NOT NULL, date TEXT NOT NULL, stars INTEGER NOT NULL, reason TEXT NOT NULL);',
     'CREATE TABLE IF NOT EXISTS student_reviews (id TEXT PRIMARY KEY, student_id INTEGER NOT NULL, date TEXT NOT NULL, time TEXT NOT NULL, tag TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL, next TEXT NOT NULL);',
-    'CREATE TABLE IF NOT EXISTS student_skills (student_id INTEGER NOT NULL, area_name TEXT NOT NULL, score INTEGER NOT NULL, PRIMARY KEY (student_id, area_name));'
+    'CREATE TABLE IF NOT EXISTS student_skills (student_id INTEGER NOT NULL, area_name TEXT NOT NULL, score INTEGER NOT NULL, PRIMARY KEY (student_id, area_name));',
+    'CREATE TABLE IF NOT EXISTS class_leadership (role TEXT PRIMARY KEY, student_id INTEGER NOT NULL);',
+    'CREATE TABLE IF NOT EXISTS gallery_images (id TEXT PRIMARY KEY, image TEXT NOT NULL, created_at TEXT NOT NULL);'
   ]
 
   for (const sql of tableSqls) {
@@ -179,13 +181,15 @@ export default {
 
         // GET /api/data - Retrieve all class data
         if (url.pathname === '/api/data' && request.method === 'GET') {
-          const [studentsRes, noticeRes, hwRes, awardsRes, reviewsRes, skillsRes] = await Promise.all([
+          const [studentsRes, noticeRes, hwRes, awardsRes, reviewsRes, skillsRes, leadershipRes, galleryRes] = await Promise.all([
             env.DB.prepare('SELECT * FROM students ORDER BY id ASC').all(),
             env.DB.prepare('SELECT * FROM daily_notice WHERE id = 1').first(),
             env.DB.prepare('SELECT * FROM homework ORDER BY order_num ASC').all(),
             env.DB.prepare('SELECT * FROM star_awards ORDER BY date DESC').all(),
             env.DB.prepare('SELECT * FROM student_reviews ORDER BY date DESC, time DESC').all(),
-            env.DB.prepare('SELECT * FROM student_skills').all()
+            env.DB.prepare('SELECT * FROM student_skills').all(),
+            env.DB.prepare('SELECT * FROM class_leadership').all(),
+            env.DB.prepare('SELECT * FROM gallery_images ORDER BY created_at DESC').all()
           ])
 
           const names: string[] = []
@@ -234,6 +238,14 @@ export default {
             task: h.task
           }))
 
+          const leadership = { captain: null as number | null, viceCaptain: null as number | null }
+          for (const row of (leadershipRes.results || [])) {
+            if (row.role === 'captain') leadership.captain = row.student_id
+            if (row.role === 'viceCaptain') leadership.viceCaptain = row.student_id
+          }
+
+          const gallery = (galleryRes.results || []).map((item: any) => ({ id: item.id, image: item.image, createdAt: item.created_at }))
+
           const dailyNotice = noticeRes ? {
             title: noticeRes.title,
             date: noticeRes.date,
@@ -260,26 +272,33 @@ export default {
               skills,
               names: names.length > 0 ? names : DEFAULT_NAMES,
               birthdays: birthdays.length > 0 ? birthdays : DEFAULT_BIRTHDAYS,
-              avatars
+              avatars,
+              leadership,
+              gallery
             }
           })
         }
 
-        // GET /api/usage - Small, privacy-safe D1 storage monitor for the teacher portal
+        // GET /api/usage - portable D1 data-size estimate for the teacher portal
         if (url.pathname === '/api/usage' && request.method === 'GET') {
-          const [pageCountRow, pageSizeRow] = await Promise.all([
-            env.DB.prepare('PRAGMA page_count').first(),
-            env.DB.prepare('PRAGMA page_size').first()
+          const [students, notice, homework, awards, reviews, skills, gallery] = await Promise.all([
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(name) + LENGTH(birthday) + COALESCE(LENGTH(avatar), 0)), 0) AS bytes FROM students').first(),
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(title) + LENGTH(date) + LENGTH(time) + LENGTH(highlight) + LENGTH(body) + LENGTH(reminder)), 0) AS bytes FROM daily_notice').first(),
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(id) + LENGTH(subject) + LENGTH(task)), 0) AS bytes FROM homework').first(),
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(id) + LENGTH(date) + LENGTH(reason) + 16), 0) AS bytes FROM star_awards').first(),
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(id) + LENGTH(date) + LENGTH(time) + LENGTH(tag) + LENGTH(title) + LENGTH(content) + LENGTH(next)), 0) AS bytes FROM student_reviews').first(),
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(area_name) + 16), 0) AS bytes FROM student_skills').first(),
+            env.DB.prepare('SELECT COALESCE(SUM(LENGTH(id) + LENGTH(image) + LENGTH(created_at)), 0) AS bytes FROM gallery_images').first()
           ])
-          const pageCount = Number(pageCountRow?.page_count || 0)
-          const pageSize = Number(pageSizeRow?.page_size || 4096)
-          const usedBytes = pageCount * pageSize
+          const usedBytes = [students, notice, homework, awards, reviews, skills, gallery]
+            .reduce((total, row: any) => total + Number(row?.bytes || 0), 16 * 1024)
           const freeLimitBytes = 5 * 1024 * 1024 * 1024
           return jsonResponse({
             success: true,
             usedBytes,
             freeLimitBytes,
-            percent: Math.min(100, Number(((usedBytes / freeLimitBytes) * 100).toFixed(4)))
+            percent: Math.min(100, Number(((usedBytes / freeLimitBytes) * 100).toFixed(4))),
+            estimated: true
           })
         }
 
@@ -323,6 +342,38 @@ export default {
           }
 
           return jsonResponse({ success: true, message: 'Homework updated' })
+        }
+
+        // POST /api/gallery - Add or remove compressed class activity photos
+        if (url.pathname === '/api/gallery' && request.method === 'POST') {
+          const body = await request.json() as any
+          if (body.action === 'remove' && typeof body.id === 'string') {
+            await env.DB.prepare('DELETE FROM gallery_images WHERE id = ?').bind(body.id).run()
+            return jsonResponse({ success: true })
+          }
+          const item = body.item
+          if (body.action === 'add' && item && typeof item.id === 'string' && typeof item.image === 'string' && item.image.startsWith('data:image/') && item.image.length <= 650000) {
+            await env.DB.prepare('INSERT INTO gallery_images (id, image, created_at) VALUES (?, ?, ?)').bind(item.id, item.image, item.createdAt || new Date().toISOString()).run()
+            return jsonResponse({ success: true })
+          }
+          return jsonResponse({ error: 'Dữ liệu ảnh không hợp lệ hoặc ảnh quá lớn' }, 400)
+        }
+
+        // POST /api/class-leadership - Save class captain and vice captain
+        if (url.pathname === '/api/class-leadership' && request.method === 'POST') {
+          const body = await request.json() as any
+          const captain = body.captain === null ? null : Number(body.captain)
+          const viceCaptain = body.viceCaptain === null ? null : Number(body.viceCaptain)
+          const validId = (id: number | null) => id === null || (Number.isInteger(id) && id >= 0 && id < DEFAULT_NAMES.length)
+          if (!validId(captain) || !validId(viceCaptain) || (captain !== null && captain === viceCaptain)) {
+            return jsonResponse({ error: 'Dữ liệu cán sự lớp không hợp lệ' }, 400)
+          }
+          await env.DB.prepare('DELETE FROM class_leadership').run()
+          const updates: any[] = []
+          if (captain !== null) updates.push(env.DB.prepare('INSERT INTO class_leadership (role, student_id) VALUES (?, ?)').bind('captain', captain))
+          if (viceCaptain !== null) updates.push(env.DB.prepare('INSERT INTO class_leadership (role, student_id) VALUES (?, ?)').bind('viceCaptain', viceCaptain))
+          if (updates.length) await env.DB.batch(updates)
+          return jsonResponse({ success: true, message: 'Class leadership updated' })
         }
 
         // POST /api/stars - Add a star award record

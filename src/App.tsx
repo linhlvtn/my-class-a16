@@ -17,6 +17,7 @@ import TeacherAdmin from './TeacherAdmin'
 import { classStore, DailyNoticeData, HomeworkItem } from './services/classStore'
 import { getTimetable, WEEKDAYS } from './data/timetable'
 import { ContactSettings, getContactSettings } from './data/contactSettings'
+import { getDefaultStudentAvatar } from './data/defaultStudentAvatars'
 
 function TeacherContact({ contact }: { contact: ContactSettings }) {
   return <section className="teacher-contact" aria-labelledby="teacher-contact-title">
@@ -97,6 +98,7 @@ function QuickActions({ notificationOpen, onToggleNotification, notice, contact 
   return <aside className="quick-actions" aria-label="Liên hệ và thông báo nhanh">
     <a className="quick-action quick-call" href={`tel:${contact.phone}`} aria-label={`Gọi nhanh cô Vũ Thị Thiết, số ${contact.phone}`}><span aria-hidden="true">☎</span><b>Gọi cô giáo chủ nhiệm</b></a>
     <a className="quick-action quick-zalo" href={contact.zaloUrl} target="_blank" rel="noreferrer" aria-label="Mở Nhóm Lớp trên Zalo"><span className="zalo-mark" aria-hidden="true">Z</span><b>Nhóm Lớp</b></a>
+    <a className="quick-action quick-teacher" href="/cogiaochunhiem" aria-label="Mở Cổng giáo viên"><span aria-hidden="true">👩🏻‍🏫</span><b>Cổng giáo viên</b></a>
     <div className="quick-notification"><button className="quick-action quick-bell" type="button" onClick={onToggleNotification} aria-expanded={notificationOpen} aria-controls="latest-class-notice"><span aria-hidden="true">🔔</span><i aria-hidden="true" /><b>Thông báo</b></button>{notificationOpen && <div id="latest-class-notice" className="latest-notice" role="status"><span className="latest-notice-top">🔔 CÓ THÔNG BÁO MỚI</span><strong>Cô vừa cập nhật: {notice.title}</strong><p>{notice.highlight}</p><a href="#daily-update" onClick={onToggleNotification}>Xem thông báo của cô →</a></div>}</div>
   </aside>
 }
@@ -116,7 +118,7 @@ function Portrait({ index }: { index: number }) {
       />
     )
   }
-  return <span className="portrait" style={{ backgroundImage: `url(${hero})`, backgroundPosition: `${[10,21,31,41,57,67,79,92][index%8]}% 40%` }} role="img" aria-label="Chân dung minh họa học sinh" />
+  return <span className="portrait" style={{ backgroundImage: `url(${getDefaultStudentAvatar(classStore.getData().names[index])})`, backgroundSize: 'cover', backgroundPosition: 'center' }} role="img" aria-label="Ảnh đại diện mặc định học sinh" />
 }
 
 function Title({ tag, children, subtitle }: { tag: string; children: React.ReactNode; subtitle?: string }) {
@@ -350,10 +352,32 @@ export default function App() {
   const [period, setPeriod] = useState('Tuần')
   const ranking = classStore.getLeaderboard(period === 'Tuần' ? 'week' : 'month')
   const [read, setRead] = useState(false)
+  const galleryPhotos = storeData.gallery?.length
+    ? storeData.gallery.map(item => ({ title: 'Kỷ niệm của lớp 2A16', image: item.image, label: 'KHOẢNH KHẮC LỚP MÌNH', text: '' }))
+    : albums
+
+  useEffect(() => {
+    if (galleryPhotos.length <= 4) return
+    const timer = window.setInterval(() => {
+      const track = galleryTrack.current
+      if (!track) return
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 8
+      if (atEnd) track.scrollTo({ left: 0, behavior: 'smooth' })
+      else moveGallery(1)
+    }, 4200)
+    return () => window.clearInterval(timer)
+  }, [galleryPhotos.length])
   const [done, setDone] = useState<number[]>([])
   const [modal, setModal] = useState<typeof albums[number] | null>(null)
   const [notificationOpen, setNotificationOpen] = useState(false)
   const dialog = useRef<HTMLDialogElement>(null)
+  const galleryTrack = useRef<HTMLDivElement>(null)
+  const moveGallery = (direction: -1 | 1) => {
+    const track = galleryTrack.current
+    if (!track) return
+    const step = window.innerWidth <= 700 ? track.clientWidth * 0.82 : track.clientWidth / 4 + 16
+    track.scrollBy({ left: direction * step, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     if (modal) dialog.current?.showModal()
@@ -598,12 +622,16 @@ export default function App() {
         <Title tag="LƯU GIỮ NHỮNG KHOẢNH KHẮC YÊU THƯƠNG" subtitle="Mỗi bức ảnh lưu lại một nụ cười, một ngày học thật vui.">
           KỶ NIỆM ĐẸP CỦA LỚP
         </Title>
-        <div className="album-grid gallery-grid">
-          {albums.map((album,i)=>(
-            <button className={`album album-${i}`} key={album.title} onClick={()=>setModal(album)} aria-label={`Xem ảnh lớn: ${album.title}`}>
-              <div className="album-image"><img loading="lazy" src={album.image} alt={album.title}/></div>
-            </button>
-          ))}
+        <div className="gallery-carousel">
+          <button type="button" className="gallery-carousel-nav gallery-carousel-prev" onClick={() => moveGallery(-1)} aria-label="Xem ảnh trước">‹</button>
+          <div className="gallery-carousel-track" ref={galleryTrack}>
+            {galleryPhotos.map((album,i)=>(
+              <button className={`album album-${i}`} key={album.image + i} onClick={()=>setModal(album)} aria-label={`Xem ảnh lớn: ${album.title}`}>
+                <div className="album-image"><img loading="lazy" src={album.image} alt={album.title}/></div>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="gallery-carousel-nav gallery-carousel-next" onClick={() => moveGallery(1)} aria-label="Xem ảnh tiếp theo">›</button>
         </div>
       </section>
 

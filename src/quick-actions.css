@@ -39,3 +39,5 @@
 @media(max-width:600px){.notice-modal-card{padding:24px 18px 20px;border-radius:22px}.notice-modal-title{font-size:22px}.notice-modal-actions{flex-direction:column;gap:8px}.notice-modal-btn{width:100%;padding:12px 14px}}
 @media(prefers-reduced-motion:reduce){.notice-modal-backdrop,.notice-modal-card,.notice-modal-bell{animation:none!important}}
 
+.quick-teacher{background:linear-gradient(145deg,#62c4a5,#16866f)}.quick-teacher>span{font-size:29px!important}
+@media(max-width:700px){.quick-actions{right:10px;gap:8px}.quick-action{width:46px;height:46px;border-radius:16px}.quick-action>span{font-size:22px}.quick-teacher>span{font-size:22px!important}.zalo-mark{width:26px;height:26px;border-radius:9px;font-size:17px!important}.quick-bell i{top:6px;right:6px;width:10px;height:10px}.latest-notice{bottom:54px}}

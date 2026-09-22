@@ -41,3 +41,7 @@
 @keyframes heartPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
 @media(prefers-reduced-motion:reduce){.class-growth-note-icon,.class-growth-icon-wrap,.class-skill-icon-3d{animation:none!important;transition:none!important}}
 
+
+
+/* Class leadership labels */
+.class-role{display:inline-flex;align-items:center;justify-content:center;margin:0 0 9px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900;line-height:1.2}.class-role--captain{background:linear-gradient(135deg,#fff1ad,#ffd873);color:#915f0d;box-shadow:0 2px 0 #e4b940}.class-role--viceCaptain{background:linear-gradient(135deg,#f0e9ff,#d9c7ff);color:#63449b;box-shadow:0 2px 0 #bda4eb}.class-profile-identity .class-role{margin:7px 0 0}@media(max-width:700px){.class-role{font-size:11px;padding:5px 8px}}

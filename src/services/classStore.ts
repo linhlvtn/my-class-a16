@@ -40,6 +40,17 @@ export interface StudentSkillRatings {
   [areaName: string]: number // 0 to 3 index in levels
 }
 
+export interface GalleryItem {
+  id: string
+  image: string
+  createdAt: string
+}
+
+export interface ClassLeadership {
+  captain: number | null
+  viceCaptain: number | null
+}
+
 export interface ClassData {
   dailyNotice: DailyNoticeData
   homework: HomeworkItem[]
@@ -49,6 +60,8 @@ export interface ClassData {
   names: string[]
   birthdays: string[]
   avatars?: Record<number, string>
+  leadership: ClassLeadership
+  gallery: GalleryItem[]
 }
 
 const DEFAULT_NAMES = [
@@ -162,7 +175,9 @@ function getInitialState(): ClassData {
       skills: generateInitialSkills(),
       names: DEFAULT_NAMES,
       birthdays: DEFAULT_BIRTHDAYS,
-      avatars: {}
+      avatars: {},
+      leadership: { captain: null, viceCaptain: null },
+      gallery: []
     }
   }
 
@@ -172,6 +187,8 @@ function getInitialState(): ClassData {
       const parsed = JSON.parse(saved)
       if (parsed.names && parsed.dailyNotice && parsed.homework) {
         if (!parsed.avatars) parsed.avatars = {}
+        if (!parsed.leadership) parsed.leadership = { captain: null, viceCaptain: null }
+        if (!parsed.gallery) parsed.gallery = []
         return parsed
       }
     }
@@ -197,7 +214,9 @@ function getInitialState(): ClassData {
     skills: generateInitialSkills(),
     names: DEFAULT_NAMES,
     birthdays: DEFAULT_BIRTHDAYS,
-    avatars: {}
+    avatars: {},
+    leadership: { captain: null, viceCaptain: null },
+    gallery: []
   }
 
   try {
@@ -235,7 +254,9 @@ class ClassStore {
         if (json && json.success && json.data) {
           this.data = {
             ...json.data,
-            avatars: json.data.avatars || {}
+            avatars: json.data.avatars || {},
+            leadership: json.data.leadership || { captain: null, viceCaptain: null },
+            gallery: json.data.gallery || []
           }
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data))
@@ -467,6 +488,36 @@ class ClassStore {
 
   public getStudentAvatar(studentId: number): string | undefined {
     return this.data.avatars?.[studentId]
+  }
+
+  public addGalleryImage(image: string) {
+    const item: GalleryItem = { id: 'gallery-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), image, createdAt: new Date().toISOString() }
+    this.data.gallery = [item, ...(this.data.gallery || [])]
+    this.notify()
+    fetch('/api/gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', item }) })
+      .catch(err => console.error('Error persisting gallery image to D1:', err))
+  }
+
+  public removeGalleryImage(id: string) {
+    this.data.gallery = (this.data.gallery || []).filter(item => item.id !== id)
+    this.notify()
+    fetch('/api/gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'remove', id }) })
+      .catch(err => console.error('Error removing gallery image from D1:', err))
+  }
+
+  public updateClassLeadership(leadership: ClassLeadership) {
+    const captain = leadership.captain === null ? null : Number(leadership.captain)
+    const viceCaptain = leadership.viceCaptain === null ? null : Number(leadership.viceCaptain)
+    if (captain !== null && (captain < 0 || captain >= this.data.names.length)) return
+    if (viceCaptain !== null && (viceCaptain < 0 || viceCaptain >= this.data.names.length)) return
+
+    this.data.leadership = { captain, viceCaptain: captain === viceCaptain ? null : viceCaptain }
+    this.notify()
+    fetch('/api/class-leadership', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(this.data.leadership)
+    }).catch(err => console.error('Error persisting class leadership to D1:', err))
   }
 
   // Reset to default

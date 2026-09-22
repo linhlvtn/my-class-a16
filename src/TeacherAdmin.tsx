@@ -8,6 +8,7 @@ import hero from './assets/classroom-v2.png'
 import { classStore, StudentReviewItem } from './services/classStore'
 import { getTimetable, saveTimetable, Timetable, WEEKDAYS } from './data/timetable'
 import { ContactSettings, getContactSettings, saveContactSettings } from './data/contactSettings'
+import { getDefaultStudentAvatar } from './data/defaultStudentAvatars'
 import './teacher-admin.css'
 
 // ── Lucide React Icons ────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ import {
   User,
   HardDrive,
   Settings,
+  Crown,
 } from 'lucide-react'
 
 // ── Image Compressor for Avatar Uploads (Resizes & crops square to max 256x256, ~15-25KB) ──
@@ -88,6 +90,30 @@ function compressImage(file: File, maxSize = 256): Promise<string> {
     reader.readAsDataURL(file)
   })
 }
+
+function compressGalleryImage(file: File, maxEdge = 960): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = event => {
+      const image = new Image()
+      image.onload = () => {
+        const scale = Math.min(1, maxEdge / Math.max(image.width, image.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(image.width * scale)
+        canvas.height = Math.round(image.height * scale)
+        const context = canvas.getContext('2d')
+        if (!context) return reject(new Error('Không thể xử lý ảnh'))
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.76))
+      }
+      image.onerror = reject
+      image.src = event.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 
 
 
@@ -127,15 +153,15 @@ export function StudentAvatarImg({
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        backgroundImage: `url(${hero})`,
-        backgroundPosition: `${[10, 21, 31, 41, 57, 67, 79, 92][id % 8]}% 40%`,
-        backgroundSize: '850% auto',
+        backgroundImage: `url(${getDefaultStudentAvatar(classStore.getData().names[id])})`,
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
         borderRadius: '50%',
         display: 'inline-block',
         flexShrink: 0
       }}
       role="img"
-      aria-label="Chân dung minh họa"
+      aria-label="Ảnh đại diện mặc định học sinh"
     />
   )
 }
@@ -206,7 +232,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
 
   // App / Store State
   const [storeData, setStoreData] = useState(() => classStore.getData())
-  const [activeTab, setActiveTab] = useState<'daily' | 'schedule' | 'stars' | 'students' | 'manage'>('daily')
+  const [activeTab, setActiveTab] = useState<'daily' | 'schedule' | 'gallery' | 'studentHub'>('daily')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [storageUsage, setStorageUsage] = useState<{ usedBytes: number; freeLimitBytes: number; percent: number } | null>(null)
@@ -226,6 +252,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
   const [contactForm, setContactForm] = useState<ContactSettings>(() => getContactSettings())
   const [newHwSubject, setNewHwSubject] = useState('')
   const [newHwTask, setNewHwTask] = useState('')
+  const [isProcessingGallery, setIsProcessingGallery] = useState(false)
 
   // Tab 2: Star awards
   const [selectedStudentForStar, setSelectedStudentForStar] = useState<number>(0)
@@ -251,11 +278,12 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
   const [editReviewNext, setEditReviewNext] = useState('')
 
   useEffect(() => {
+    if (!accountMenuOpen) return
     fetch('/api/usage')
       .then(res => res.ok ? res.json() : Promise.reject(new Error('Usage unavailable')))
       .then(payload => { if (payload?.success) setStorageUsage(payload) })
       .catch(() => setStorageUsage(null))
-  }, [])
+  }, [accountMenuOpen])
 
   // Subscribe to store updates
   useEffect(() => {
@@ -427,8 +455,12 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
 
   // Filter students
   const filteredStudents = storeData.names
-    .map((name, id) => ({ id, name, birthday: storeData.birthdays[id] }))
+    .map((name, id) => ({ id, name, birthday: storeData.birthdays[id], stars: classStore.getStudentTotalStars(id) }))
     .filter(s => normalize(s.name).includes(normalize(studentSearch)) || String(s.id + 1).includes(studentSearch))
+    .sort((a, b) => {
+      const priority = (id: number) => id === storeData.leadership?.captain ? 0 : id === storeData.leadership?.viceCaptain ? 1 : 2
+      return priority(a.id) - priority(b.id) || a.id - b.id
+    })
 
   const filteredStarStudents = storeData.names
     .map((name, id) => ({ id, name, stars: classStore.getStudentTotalStars(id) }))
@@ -439,6 +471,19 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
     normalize(s.name).includes(normalize(starOverviewSearch)) || String(s.id + 1).includes(starOverviewSearch)
   )
 
+  const handleLeadershipChange = (role: 'captain' | 'viceCaptain', value: string) => {
+    const studentId = value === '' ? null : Number(value)
+    const current = storeData.leadership || { captain: null, viceCaptain: null }
+    const next = { ...current, [role]: studentId }
+    if (studentId !== null && (role === 'captain' ? next.viceCaptain : next.captain) === studentId) {
+      if (role === 'captain') next.viceCaptain = null
+      else next.captain = null
+    }
+    classStore.updateClassLeadership(next)
+    const roleLabel = role === 'captain' ? 'Lớp trưởng' : 'Lớp phó'
+    const name = studentId === null ? 'chưa chỉ định' : storeData.names[studentId]
+    showToast(studentId === null ? 'Đã bỏ chỉ định ' + roleLabel + '.' : 'Đã chỉ định ' + name + ' làm ' + roleLabel + '!')
+  }
   // Filter students for Tab 4: Student info management
   const filteredManageStudents = storeData.names
     .map((name, id) => ({
@@ -476,6 +521,30 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
     } finally {
       setIsProcessingAvatar(false)
       e.target.value = ''
+    }
+  }
+
+  const handleGalleryFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    if (!files.length) return
+    const available = 30 - (storeData.gallery || []).length
+    const candidates = files.filter(file => file.type.startsWith('image/') && file.size <= 8 * 1024 * 1024).slice(0, Math.max(0, available))
+    if (!candidates.length) {
+      showToast(available <= 0 ? 'Thư viện đã có đủ 30 ảnh. Cô hãy xóa bớt ảnh cũ trước khi thêm ảnh mới.' : 'Cô vui lòng chọn ảnh JPG, PNG hoặc WebP dưới 8 MB.')
+      event.target.value = ''
+      return
+    }
+    try {
+      setIsProcessingGallery(true)
+      for (const file of candidates) classStore.addGalleryImage(await compressGalleryImage(file))
+      const skipped = files.length - candidates.length
+      showToast('Đã thêm ' + candidates.length + ' ảnh hoạt động của lớp!' + (skipped > 0 ? ' Một số ảnh không hợp lệ hoặc vượt giới hạn đã được bỏ qua.' : ''))
+    } catch (error) {
+      console.error('Error processing gallery images:', error)
+      showToast('Có ảnh không thể xử lý. Cô vui lòng thử lại ảnh đó.')
+    } finally {
+      setIsProcessingGallery(false)
+      event.target.value = ''
     }
   }
 
@@ -674,29 +743,39 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
           </button>
           <button
             role="tab"
-            aria-selected={activeTab === 'stars'}
-            className={`admin-tab-btn ${activeTab === 'stars' ? 'active' : ''}`}
-            onClick={() => setActiveTab('stars')}
+            aria-selected={activeTab === 'gallery'}
+            className={`admin-tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gallery')}
           >
-            <Star size={17} /> Khen thưởng HS
+            <Camera size={17} /> Hình ảnh lớp
           </button>
           <button
             role="tab"
-            aria-selected={activeTab === 'students'}
-            className={`admin-tab-btn ${activeTab === 'students' ? 'active' : ''}`}
-            onClick={() => setActiveTab('students')}
+            aria-selected={activeTab === 'studentHub'}
+            className={`admin-tab-btn ${activeTab === 'studentHub' ? 'active' : ''}`}
+            onClick={() => setActiveTab('studentHub')}
           >
-            <ClipboardList size={17} /> Đánh giá HS
+            <GraduationCap size={17} /> Quản lý học sinh
           </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'manage'}
-            className={`admin-tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
-            onClick={() => setActiveTab('manage')}
-          >
-            <UserCog size={17} /> QL Thông Tin HS
-          </button>
+
         </div>
+
+        {/* ════════════════ TAB: CLASS GALLERY ════════════════ */}
+        {activeTab === 'gallery' && (
+          <div className="admin-card gallery-admin-card">
+            <div className="admin-card-header">
+              <div className="admin-card-title"><div className="card-title-icon card-title-icon--purple"><Camera size={21} /></div><div><h3>Hình ảnh hoạt động của lớp</h3><small>Ảnh tải lên sẽ hiển thị tại mục “Kỷ niệm đẹp của lớp” ngoài Trang chủ.</small></div></div>
+              <span className="admin-badge-count">{storeData.gallery?.length || 0}/30 ảnh</span>
+            </div>
+            <label className={`gallery-upload-box ${isProcessingGallery ? 'is-loading' : ''}`}>
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleGalleryFileChange} disabled={isProcessingGallery} />
+              <Upload size={25} /><b>{isProcessingGallery ? 'Đang chuẩn bị ảnh…' : 'Chọn nhiều ảnh để tải lên'}</b><small>Chọn nhiều ảnh JPG, PNG hoặc WebP · Ảnh được tự nén để tiết kiệm dung lượng</small>
+            </label>
+            {(storeData.gallery || []).length > 0 ? <div className="gallery-admin-grid">
+              {storeData.gallery.map((item, index) => <article className="gallery-admin-item" key={item.id}><img src={item.image} alt={`Ảnh hoạt động lớp 2A16 số ${index + 1}`} /><button type="button" onClick={() => { classStore.removeGalleryImage(item.id); showToast('Đã xóa ảnh khỏi thư viện.') }} aria-label="Xóa ảnh này" title="Xóa ảnh"><Trash2 size={16} /></button></article>)}
+            </div> : <div className="gallery-admin-empty"><Camera size={34} /><p>Chưa có ảnh hoạt động nào.</p><small>Cô có thể tải bức ảnh đầu tiên để tạo nên kỷ niệm đẹp của lớp!</small></div>}
+          </div>
+        )}
 
         {/* ════════════════ TAB 1: DAILY UPDATE & HOMEWORK ════════════════ */}
         {activeTab === 'daily' && (
@@ -760,7 +839,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 </div>
 
                 <button type="submit" className="btn-save-primary">
-                  <Save size={17} /> Lưu &amp; Cập nhật lên Trang chủ (Thời gian thực)
+                  <Save size={17} /> Lưu lại
                 </button>
               </form>
             </div>
@@ -857,13 +936,13 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 <div className="admin-input-group"><label>Số điện thoại cô giáo</label><input type="tel" inputMode="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })} placeholder="Ví dụ: 0982296281" required /></div>
                 <div className="admin-input-group"><label>Link Nhóm Lớp Zalo</label><input type="url" value={contactForm.zaloUrl} onChange={e => setContactForm({ ...contactForm, zaloUrl: e.target.value })} placeholder="https://zalo.me/g/..." required /></div>
               </div>
-              <button type="submit" className="btn-save-primary"><Save size={17} /> Lưu thông tin liên hệ</button>
+              <button type="submit" className="btn-save-primary"><Save size={17} /> Lưu lại</button>
             </form>
           </div>
         )}
 
         {/* ════════════════ TAB 2: STAR AWARDS & FULL CLASS OVERVIEW ════════════════ */}
-        {activeTab === 'stars' && (
+        {false && (
           <div className="admin-card">
             <div className="admin-card-header">
               <div className="admin-card-title">
@@ -1087,63 +1166,45 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
           </div>
         )}
 
-        {/* ════════════════ TAB 3: STUDENT PROFILE & REVIEWS ════════════════ */}
-        {activeTab === 'students' && (
-          <div className="admin-card">
-            <div className="admin-card-header">
-              <div className="admin-card-title">
-                <div className="card-title-icon card-title-icon--purple"><GraduationCap size={20} /></div>
-                <div>
-                  <h3>Hồ sơ &amp; Nhận xét học sinh ("Vào lớp")</h3>
-                  <small>Viết lời nhắn từng tháng, đánh giá 4 lĩnh vực và chỉnh sửa lời nhắn đã gửi</small>
-                </div>
+        {/* ════════════════ STUDENT MANAGEMENT HUB ════════════════ */}
+        {activeTab === 'studentHub' && (
+          <div className="student-hub-layout">
+            <aside className="student-hub-sidebar">
+              <div className="student-hub-sidebar-heading">
+                <div className="card-title-icon card-title-icon--purple"><Users size={20} /></div>
+                <div><h3>Danh sách học sinh lớp</h3><small>Chọn một bạn để quản lý hồ sơ, ảnh và thông tin</small></div>
               </div>
-            </div>
-
-            {/* Student Selector */}
-            <div className="admin-input-group">
-              <label><Search size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />Tìm kiếm &amp; Chọn học sinh:</label>
-              <div className="search-with-clear">
+              <div className="search-with-clear student-hub-search">
                 <Search size={16} className="search-icon-prefix" />
-                <input
-                  type="text"
-                  placeholder="Gõ tên học sinh để tìm nhanh..."
-                  value={studentSearch}
-                  onChange={e => setStudentSearch(e.target.value)}
-                  className="has-prefix-icon"
-                />
-                {studentSearch && (
-                  <button
-                    type="button"
-                    className="clear-search-btn"
-                    onClick={() => setStudentSearch('')}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
+                <input type="text" placeholder="Tìm tên hoặc số thứ tự..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="has-prefix-icon" />
+                {studentSearch && <button type="button" className="clear-search-btn" onClick={() => setStudentSearch('')} aria-label="Xóa tìm kiếm"><X size={13} /></button>}
               </div>
-            </div>
+              <section className="leadership-editor student-hub-leadership" aria-label="Chỉ định ban cán sự lớp">
+                <div className="leadership-editor-title">
+                  <span className="leadership-editor-icon"><Crown size={17} /></span>
+                  <div><b>Ban cán sự lớp</b><small>Chỉ định Lớp trưởng và Lớp phó</small></div>
+                </div>
+                <label><span>👑 Lớp trưởng</span><select value={storeData.leadership?.captain ?? ''} onChange={e => handleLeadershipChange('captain', e.target.value)}><option value="">Chưa chỉ định</option>{storeData.names.map((name, id) => <option key={id} value={id}>{String(id + 1).padStart(2, '0')} · {name}</option>)}</select></label>
+                <label><span>⭐ Lớp phó</span><select value={storeData.leadership?.viceCaptain ?? ''} onChange={e => handleLeadershipChange('viceCaptain', e.target.value)}><option value="">Chưa chỉ định</option>{storeData.names.map((name, id) => <option key={id} value={id}>{String(id + 1).padStart(2, '0')} · {name}</option>)}</select></label>
+              </section>
+              <div className="student-hub-list">
+                {filteredStudents.map(student => {
+                  const isSelected = selectedStudentForReview === student.id
+                  const leadershipRole = student.id === storeData.leadership?.captain ? 'captain' : student.id === storeData.leadership?.viceCaptain ? 'viceCaptain' : null
+                  return <button type="button" key={student.id} className={`student-hub-item ${isSelected ? 'active' : ''}`} onClick={() => { setSelectedStudentForReview(student.id); setSelectedStudentForStar(student.id); setEditingReviewId(null) }}>
+                    <span className="student-hub-avatar-wrap">
+                      <StudentAvatarImg id={student.id} customAvatar={storeData.avatars?.[student.id]} size={42} className="student-hub-avatar" />
+                      <span className="student-hub-star" title={student.stars + ' sao'}><img src={gameStar} alt="" /><b>{student.stars}</b></span>
+                    </span>
+                    <span className="student-hub-item-copy"><b>{String(student.id + 1).padStart(2, '0')} · {student.name}</b><small>Sinh nhật · {student.birthday}</small></span>
+                    {leadershipRole && <span className={`student-hub-role ${leadershipRole}`}>{leadershipRole === 'captain' ? '👑' : '⭐'}</span>}
+                  </button>
+                })}
+                {filteredStudents.length === 0 && <p className="student-hub-empty">Không tìm thấy học sinh phù hợp.</p>}
+              </div>
+            </aside>
 
-            <div className="student-select-grid">
-              {filteredStudents.map(student => (
-                <button
-                  type="button"
-                  key={student.id}
-                  className={`student-select-btn ${selectedStudentForReview === student.id ? 'active' : ''}`}
-                  onClick={() => setSelectedStudentForReview(student.id)}
-                >
-                  <div className="student-btn-top">
-                    <span className="student-btn-stt">{String(student.id + 1).padStart(2, '0')}</span>
-                    <span className="student-btn-name">{student.name}</span>
-                  </div>
-                  <div className="student-btn-bottom">
-                    <Cake size={12} className="student-btn-cake-icon" />
-                    <span className="student-btn-bday-text">Sinh nhật: {student.birthday}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-
+            <section className="student-hub-main admin-card">
             {/* Selected Student Management */}
             <div className="selected-student-panel">
               <div className="selected-student-header">
@@ -1190,8 +1251,9 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                     className="btn-quick-edit-profile"
                     onClick={() => openEditStudentModal(selectedStudentForReview)}
                     title="Sửa họ tên, ngày sinh hoặc thay ảnh đại diện"
+                    aria-label="Sửa thông tin học sinh"
                   >
-                    <Pencil size={13} /> Sửa thông tin con
+                    <Pencil size={17} />
                   </button>
                   <a
                     href="#classroom"
@@ -1203,11 +1265,27 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                         window.location.hash = '#classroom'
                       }
                     }}
+                    aria-label="Xem hồ sơ trên trang Vào lớp"
+                    title="Xem hồ sơ trên trang Vào lớp"
                   >
-                    <Home size={14} /> Xem hồ sơ trên trang "Vào lớp" →
+                    <Home size={17} />
                   </a>
                 </div>
               </div>
+
+              <form onSubmit={handleAwardStars} className="student-inline-award">
+                <div className="student-inline-award-head">
+                  <div><span className="student-inline-award-icon"><Star size={18} fill="currentColor" /></span><div><h4>Khen thưởng học sinh</h4><small>Ghi nhận cố gắng của con ngay hôm nay</small></div></div>
+                  <span className="student-total-stars">{classStore.getStudentTotalStars(selectedStudentForReview)} sao</span>
+                </div>
+                <div className="student-inline-award-controls">
+                  <div className="star-chips">
+                    {[1, 2, 3, 5].map(count => <button type="button" key={count} className={`star-chip-btn ${starCount === count ? 'active' : ''}`} onClick={() => setStarCount(count)}><img src={gameStar} alt="" />+{count} sao</button>)}
+                  </div>
+                  <textarea rows={2} value={starReason} onChange={e => setStarReason(e.target.value)} placeholder="Lý do khen thưởng: chăm chỉ, tự tin, giúp đỡ bạn bè..." required />
+                  <button type="submit" className="btn-save-primary btn-award-stars"><Star size={17} fill="currentColor" /> Tặng sao cho {storeData.names[selectedStudentForReview]}</button>
+                </div>
+              </form>
 
               {/* 4 Learning Domains */}
               <div className="skills-assessment-box">
@@ -1318,7 +1396,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 </div>
 
                 <button type="submit" className="btn-save-primary">
-                  <Save size={17} /> Lưu nhận xét cho {storeData.names[selectedStudentForReview]}
+                  <Save size={17} /> Lưu lại
                 </button>
               </form>
             </div>
@@ -1393,7 +1471,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                             className="btn-save-primary"
                             onClick={() => handleSaveEditedReview(rev.id)}
                           >
-                            <Save size={16} /> Lưu thay đổi
+                            <Save size={16} /> Lưu lại
                           </button>
                           <button
                             type="button"
@@ -1460,6 +1538,8 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 )}
               </div>
             </div>
+
+            </section>
           </div>
         )}
 
@@ -1480,13 +1560,13 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                   {WEEKDAYS.map((day, dayIndex) => <input key={day} value={scheduleForm.schedule[dayIndex]?.[lessonIndex] || ''} onChange={e => setScheduleForm(current => ({ ...current, schedule: current.schedule.map((items, index) => index === dayIndex ? items.map((item, itemIndex) => itemIndex === lessonIndex ? e.target.value : item) : items) }))} aria-label={`${day}, tiết ${lessonIndex + 1}`} placeholder="Tên môn học" />)}
                 </div>)}
               </div>
-              <div className="schedule-admin-actions"><span>💡 Cô có thể thay đổi tự do tên môn và khung giờ của từng tiết.</span><button type="submit" className="btn-save-primary"><Save size={17} /> Lưu thời khóa biểu</button></div>
+              <div className="schedule-admin-actions"><span>💡 Cô có thể thay đổi tự do tên môn và khung giờ của từng tiết.</span><button type="submit" className="btn-save-primary"><Save size={17} /> Lưu lại</button></div>
             </form>
           </div>
         )}
 
         {/* ════════════════ TAB 4: MANAGE STUDENT INFO ════════════════ */}
-        {activeTab === 'manage' && (
+        {false && (
           <div className="admin-card">
             <div className="admin-card-header">
               <div className="admin-card-title">
@@ -1499,6 +1579,27 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                 </div>
               </div>
             </div>
+
+            <section className="leadership-editor" aria-label="Chỉ định ban cán sự lớp">
+              <div className="leadership-editor-title">
+                <span className="leadership-editor-icon"><Crown size={20} /></span>
+                <div><b>Ban cán sự lớp</b><small>Cô chỉ định Lớp trưởng và Lớp phó cho lớp 2A16</small></div>
+              </div>
+              <label>
+                <span>👑 Lớp trưởng</span>
+                <select value={storeData.leadership?.captain ?? ''} onChange={e => handleLeadershipChange('captain', e.target.value)}>
+                  <option value="">Chưa chỉ định</option>
+                  {storeData.names.map((name, id) => <option key={id} value={id}>{String(id + 1).padStart(2, '0')} · {name}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>⭐ Lớp phó</span>
+                <select value={storeData.leadership?.viceCaptain ?? ''} onChange={e => handleLeadershipChange('viceCaptain', e.target.value)}>
+                  <option value="">Chưa chỉ định</option>
+                  {storeData.names.map((name, id) => <option key={id} value={id}>{String(id + 1).padStart(2, '0')} · {name}</option>)}
+                </select>
+              </label>
+            </section>
 
             {/* Quick stats & search */}
             <div className="manage-top-bar">
@@ -1532,10 +1633,12 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
             <div className="manage-students-grid">
               {filteredManageStudents.map(st => {
                 const hasCustom = Boolean(storeData.avatars?.[st.id])
+                const leadershipRole = st.id === storeData.leadership?.captain ? 'captain' : st.id === storeData.leadership?.viceCaptain ? 'viceCaptain' : null
                 return (
                   <div key={st.id} className="manage-student-card">
                     <div className="manage-card-top">
                       <span className="manage-stt-badge">#{String(st.id + 1).padStart(2, '0')}</span>
+                      {leadershipRole && <span className={'manage-leadership-tag ' + leadershipRole}>{leadershipRole === 'captain' ? '👑 Lớp trưởng' : '⭐ Lớp phó'}</span>}
                       {hasCustom && (
                         <span className="manage-custom-avatar-tag" title="Đã có ảnh đại diện riêng">
                           ★ Ảnh riêng
@@ -1710,7 +1813,7 @@ export default function TeacherAdmin({ onBackToHome }: TeacherAdminProps) {
                   <X size={15} /> Hủy bỏ
                 </button>
                 <button type="submit" className="btn-save-primary" disabled={isProcessingAvatar}>
-                  <Save size={16} /> Lưu thông tin học sinh
+                  <Save size={16} /> Lưu lại
                 </button>
               </div>
             </form>
